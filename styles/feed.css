@@ -1,12 +1,8 @@
 /* ============================================================
    FEED — TikTok / Reels full-screen layout
-   - feed-container covers inset:0 (full screen incl. status bar)
-   - Each card is 100dvh
-   - Top nav is FIXED in FeedPage, not inside each card
-   - Bottom nav floats over the feed from globals.css
    ============================================================ */
 
-/* ── FEED CONTAINER — full screen, snap scroll ── */
+/* ── FEED CONTAINER ── */
 .feed-container {
   position: fixed;
   inset: 0;
@@ -15,143 +11,103 @@
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   z-index: 0;
-  /* push scroll content down so first card isn't hidden under fixed top nav */
 }
 .feed-container::-webkit-scrollbar { display: none; }
 
-/* ── FIXED TOP NAV — lives in FeedPage, over ALL cards ── */
+/* ── FIXED TOP NAV — rendered once in FeedPage, floats above all cards ── */
 .feed-top-nav {
   position: fixed;
   top: 0; left: 0; right: 0;
   max-width: 430px; margin: 0 auto;
   z-index: 30;
-  /* safe area so it clears the notch/status bar */
   padding-top: env(safe-area-inset-top, 44px);
-  pointer-events: none; /* let taps fall through to feed except on interactive children */
+  pointer-events: none;
 }
 .feed-top-nav > * { pointer-events: all; }
 
-/* Live · For You · Nearby row */
+/* Live · For You · Nearby */
 .feed-top-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-  padding: 6px 0 8px;
+  display: flex; align-items: center; justify-content: center;
+  gap: 28px; padding: 6px 0 8px;
 }
 .feed-tab {
   background: none; border: none;
   color: rgba(255,255,255,0.60);
   font-size: 16px; font-weight: 600;
   font-family: 'Inter', sans-serif;
-  cursor: pointer; padding: 2px 0;
-  position: relative;
-  transition: color 0.2s;
-  letter-spacing: -0.2px;
+  cursor: pointer; padding: 2px 0; position: relative;
+  transition: color 0.2s; letter-spacing: -0.2px;
   text-shadow: 0 1px 4px rgba(0,0,0,0.7);
 }
 .feed-tab.active { color: white; font-weight: 800; }
 .feed-tab.active::after {
-  content: '';
-  position: absolute; bottom: -4px; left: 50%;
+  content: ''; position: absolute; bottom: -4px; left: 50%;
   transform: translateX(-50%);
-  width: 20px; height: 3px;
-  background: white; border-radius: 10px;
+  width: 20px; height: 3px; background: white; border-radius: 10px;
 }
 
-/* Search icon — right side of tab row */
+/* Search icon */
 .feed-search-icon {
-  position: absolute;
+  position: fixed;
   right: 16px;
-  /* vertically align with the tab row text */
-  top: calc(env(safe-area-inset-top, 44px) + 6px);
-  height: 36px;
+  top: env(safe-area-inset-top, 44px);
+  height: 44px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; color: white; font-size: 18px;
   text-shadow: 0 1px 4px rgba(0,0,0,0.7);
   z-index: 31;
-  pointer-events: all;
 }
 
-/* Category pills — row below the tab row */
+/* Category pills */
 .feed-cats {
-  display: flex; gap: 8px;
-  padding: 0 14px 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  display: flex; gap: 8px; padding: 0 14px 6px;
+  overflow-x: auto; scrollbar-width: none;
 }
 .feed-cats::-webkit-scrollbar { display: none; }
 .feed-cat {
-  flex-shrink: 0;
-  white-space: nowrap;
-  padding: 5px 13px;
-  border-radius: 20px;
+  flex-shrink: 0; white-space: nowrap;
+  padding: 5px 13px; border-radius: 20px;
   background: rgba(255,255,255,0.14);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255,255,255,0.22);
-  font-size: 13px; font-weight: 500;
-  color: rgba(255,255,255,0.9);
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  display: flex; align-items: center; gap: 4px;
-  transition: all 0.2s;
+  font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.9);
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; gap: 4px; transition: all 0.2s;
 }
 .feed-cat.active {
-  background: rgba(255,255,255,0.28);
-  border-color: rgba(255,255,255,0.55);
+  background: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.55);
   color: white; font-weight: 700;
 }
 
-/* ── INDIVIDUAL CARD — 100dvh, pure media ── */
+/* ── INDIVIDUAL CARD ── */
 .feed-card {
-  width: 100%;
-  height: 100dvh;
-  scroll-snap-align: start;
-  scroll-snap-stop: always;
-  position: relative;
-  overflow: hidden;
-  background: #000;
-  flex-shrink: 0;
+  width: 100%; height: 100dvh;
+  scroll-snap-align: start; scroll-snap-stop: always;
+  position: relative; overflow: hidden;
+  background: #000; flex-shrink: 0;
 }
 
-/* Full-screen background media */
 .feed-media-bg {
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0;
   width: 100%; height: 100%;
-  background-size: cover;
-  background-position: center;
+  background-size: cover; background-position: center;
 }
-
-/* Large emoji watermark */
 .feed-media-emoji {
-  position: absolute;
-  top: 42%; left: 50%;
+  position: absolute; top: 42%; left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 200px;
-  opacity: 0.18;
-  pointer-events: none;
-  user-select: none;
+  font-size: 200px; opacity: 0.18;
+  pointer-events: none; user-select: none;
 }
-
-/* Gradient: transparent at top (media shows), heavy at bottom (text area) */
 .feed-overlay {
-  position: absolute;
-  inset: 0;
+  position: absolute; inset: 0;
   background: linear-gradient(
     to bottom,
-    rgba(0,0,0,0.10) 0%,
-    transparent 25%,
-    transparent 45%,
-    rgba(0,0,0,0.30) 62%,
-    rgba(0,0,0,0.72) 80%,
-    rgba(0,0,0,0.92) 100%
+    rgba(0,0,0,0.10) 0%, transparent 25%,
+    transparent 45%, rgba(0,0,0,0.30) 62%,
+    rgba(0,0,0,0.75) 80%, rgba(0,0,0,0.93) 100%
   );
   pointer-events: none;
 }
-
-/* Pause indicator */
 .feed-play {
   position: absolute; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
@@ -165,27 +121,21 @@
 .feed-play i { font-size: 28px; color: white; margin-left: 4px; }
 
 /* ── RIGHT ACTION STRIP ──
-   Sits on the right, bottom-aligned to match the price row in the info block.
-   Info block from bottom of screen:
-     nav (50px) + safe-bottom + padding (14px) + CTAs (42px) + price (30px) = ~136px
-   We align the BOTTOM of the strip with the top of the price row ≈ 168px from bottom.
-   Strip items: avatar(40) + share(48) + save(48) + comment(48) + like(48) ≈ 232px tall
-   So top of strip ≈ 168 + 232 = 400px from bottom — but we just anchor bottom.          */
+   Anchored so its BOTTOM aligns with the top of the price row.
+   Info block height from nav upward:
+     bottom-padding 12px + CTAs 46px + price-row 32px = 90px
+   Action strip bottom = 90px above the nav.                    */
 .feed-actions {
   position: absolute;
   right: 10px;
-  /* bottom edge aligns just above the price row */
-  bottom: calc(var(--nav-h) + var(--safe-bottom) + 138px);
+  bottom: calc(var(--nav-h) + var(--safe-bottom) + 90px);
   display: flex; flex-direction: column;
   align-items: center; gap: 18px;
   z-index: 20;
 }
-
 .feed-action-btn {
-  display: flex; flex-direction: column;
-  align-items: center; gap: 4px;
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
 }
 .feed-action-btn i {
   font-size: 26px; color: white;
@@ -195,44 +145,40 @@
 .feed-action-btn:active i { transform: scale(0.82); }
 .feed-action-btn i.liked { color: #FF3366; }
 .feed-action-btn i.saved { color: #FF3366; }
-
 .feed-action-count {
   font-size: 12px; font-weight: 700; color: white;
   text-shadow: 0 1px 3px rgba(0,0,0,0.9);
 }
-
-/* Seller avatar in action strip */
 .feed-action-av {
   width: 38px; height: 38px; border-radius: 50%;
-  border: 2px solid white;
-  font-size: 12px; font-weight: 900;
+  border: 2px solid white; font-size: 12px; font-weight: 900;
   box-shadow: 0 2px 8px rgba(0,0,0,0.6);
   display: flex; align-items: center; justify-content: center;
 }
 
 /* ── BOTTOM INFO BLOCK ──
-   Left-aligned (right side has action strip).
-   Anchored to bottom of card, just above the nav.                */
+   Full width edge-to-edge.
+   Text rows have right-padding to avoid overlapping the action strip.
+   Price row and CTA buttons are full-width (action strip is ABOVE price row). */
 .feed-info {
   position: absolute;
-  left: 0;
-  right: 58px;          /* clear the action strip */
+  left: 0; right: 0;
   bottom: calc(var(--nav-h) + var(--safe-bottom));
   z-index: 20;
-  padding: 0 14px 12px;
+  padding: 0 12px 12px;
 }
 
 /* Seller row */
 .feed-seller-row {
   display: flex; align-items: center; gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
+  padding-right: 52px; /* clear action strip */
 }
 .feed-seller-av {
   width: 34px; height: 34px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 11px; font-weight: 900; color: white;
-  flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+  flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.5);
 }
 .feed-seller-name-txt {
   font-size: 14px; font-weight: 700; color: white;
@@ -241,14 +187,12 @@
   flex: 1; min-width: 0;
 }
 .feed-verified {
-  width: 14px; height: 14px; border-radius: 50%;
-  background: #3B82F6;
+  width: 14px; height: 14px; border-radius: 50%; background: #3B82F6;
   display: inline-flex; align-items: center; justify-content: center;
   font-size: 8px; color: white; font-weight: 900; flex-shrink: 0;
 }
 .feed-follow-btn {
-  flex-shrink: 0;
-  padding: 5px 12px; border-radius: 7px;
+  flex-shrink: 0; padding: 5px 12px; border-radius: 7px;
   border: 1.5px solid rgba(255,255,255,0.7);
   background: rgba(255,255,255,0.10);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
@@ -258,79 +202,70 @@
 }
 .feed-follow-btn:active { background: rgba(255,255,255,0.24); }
 
-/* Product title */
+/* Title, description, badges — right padding to clear the action strip */
 .feed-product-title {
   font-size: 17px; font-weight: 800; color: white;
   margin-bottom: 3px; line-height: 1.2;
   text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  padding-right: 52px;
 }
-
-/* Description */
 .feed-product-desc {
   font-size: 13px; color: rgba(255,255,255,0.75);
-  margin-bottom: 7px; line-height: 1.4;
+  margin-bottom: 6px; line-height: 1.4;
   text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+  padding-right: 52px;
 }
-
-/* Trust badges */
 .feed-badges-row {
   display: flex; flex-wrap: wrap; gap: 5px;
-  margin-bottom: 7px;
+  margin-bottom: 6px; padding-right: 52px;
 }
 .feed-badge {
   display: inline-flex; align-items: center; gap: 4px;
   background: rgba(255,255,255,0.10);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  border: 1px solid rgba(255,255,255,0.18);
-  border-radius: 20px;
-  padding: 3px 8px;
-  font-size: 11px; font-weight: 600; color: white;
+  border: 1px solid rgba(255,255,255,0.18); border-radius: 20px;
+  padding: 3px 8px; font-size: 11px; font-weight: 600; color: white;
 }
 
-/* Price row */
+/* Price row — FULL width, no right padding (action strip is above) */
 .feed-price-row {
   display: flex; align-items: center; gap: 7px;
-  margin-bottom: 9px; flex-wrap: wrap;
+  margin-bottom: 10px; flex-wrap: wrap;
 }
 .feed-price {
   font-size: 19px; font-weight: 900; color: #FF3366;
-  letter-spacing: -0.5px;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.6);
+  letter-spacing: -0.5px; text-shadow: 0 1px 4px rgba(0,0,0,0.6);
 }
 .feed-price-orig {
-  font-size: 13px; text-decoration: line-through;
-  color: rgba(255,255,255,0.45);
+  font-size: 13px; text-decoration: line-through; color: rgba(255,255,255,0.45);
 }
 .feed-price-badge {
   background: #FF3366; color: white;
-  font-size: 11px; font-weight: 800;
-  padding: 2px 7px; border-radius: 6px;
+  font-size: 11px; font-weight: 800; padding: 2px 7px; border-radius: 6px;
 }
 
-/* CTA buttons */
+/* CTA buttons — stretch full width of the info block */
 .feed-cta-row {
-  display: flex; gap: 8px;
+  display: flex; gap: 8px; width: 100%;
 }
 .feed-btn-buy {
-  flex: 1; padding: 11px 0;
+  flex: 1; padding: 13px 0;
   background: linear-gradient(135deg, #D946EF 0%, #F43F5E 55%, #FB923C 100%);
   border: none; border-radius: 10px;
-  color: white; font-size: 13px; font-weight: 700;
+  color: white; font-size: 14px; font-weight: 700;
   cursor: pointer; font-family: 'Inter', sans-serif;
-  display: flex; align-items: center; justify-content: center; gap: 5px;
-  box-shadow: 0 4px 16px rgba(217,70,239,0.35);
-  transition: opacity 0.2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  box-shadow: 0 4px 16px rgba(217,70,239,0.35); transition: opacity 0.2s;
 }
 .feed-btn-buy:active { opacity: 0.85; }
 .feed-btn-chat {
-  flex: 1; padding: 11px 0;
+  flex: 1; padding: 13px 0;
   background: rgba(255,255,255,0.12);
   backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
-  border: 1.5px solid rgba(255,255,255,0.30);
-  border-radius: 10px;
-  color: white; font-size: 13px; font-weight: 600;
+  border: 1.5px solid rgba(255,255,255,0.30); border-radius: 10px;
+  color: white; font-size: 14px; font-weight: 600;
   cursor: pointer; font-family: 'Inter', sans-serif;
-  display: flex; align-items: center; justify-content: center; gap: 5px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
   transition: background 0.2s;
 }
 .feed-btn-chat:active { background: rgba(255,255,255,0.22); }
@@ -340,6 +275,6 @@
   .feed-product-title { font-size: 15px; }
   .feed-price         { font-size: 17px; }
   .feed-btn-buy,
-  .feed-btn-chat      { font-size: 12px; }
+  .feed-btn-chat      { font-size: 13px; }
   .feed-action-btn i  { font-size: 24px; }
 }
