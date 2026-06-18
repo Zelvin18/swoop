@@ -70,7 +70,7 @@ body { background: #000; }
   display: none;
 }
 .screen.active  { display: block; }
-.screen-feed    { bottom: 0; }   /* feed is full bleed */
+.screen-feed    { bottom: 0; top: 0; }   /* feed is full bleed — covers entire screen incl. status bar */
 
 /* ── BOTTOM NAV ── */
 .bottom-nav {

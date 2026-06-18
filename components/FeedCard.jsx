@@ -1,54 +1,57 @@
 import { useState } from 'react'
 import { formatUGX, discount } from '../lib/mockData'
 
-const CATS = ['All', 'Phones', 'Fashion', 'Electronics', 'Home']
+const CATS = ['All', 'Phones', 'Fashion', 'Electronics', 'Sneakers', 'Home']
 
 export default function FeedCard({ post: p, seller, showToast, onLive }) {
   const [liked,     setLiked]     = useState(false)
   const [saved,     setSaved]     = useState(false)
-  const [likes,     setLikes]     = useState(p.likes_count)
+  const [likes,     setLikes]     = useState(p.likes_count || 0)
   const [paused,    setPaused]    = useState(false)
   const [following, setFollowing] = useState(false)
   const [activeCat, setActiveCat] = useState('All')
 
   const fmt = n => {
     n = Math.round(n)
-    return n >= 1000 ? (n/1000).toFixed(1).replace('.0','')+'K' : String(n)
+    return n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'K' : String(n)
   }
 
-  const disc     = discount(p.price, p.orig_price)
-  const priceStr = formatUGX(p.price)
-  const origStr  = formatUGX(p.orig_price)
+  const discStr  = p.price && p.orig_price ? discount(p.price, p.orig_price) : null
+  const priceStr = p.price ? formatUGX(p.price) : null
+  const origStr  = p.orig_price ? formatUGX(p.orig_price) : null
 
   return (
-    <div className="feed-card">
+    <div className={`feed-card${paused ? ' paused' : ''}`}>
 
-      {/* ── FULL SCREEN MEDIA ── */}
+      {/* ── FULL SCREEN MEDIA (covers entire screen) ── */}
       <div
         className="feed-media-bg"
-        style={{ background: p.bg }}
+        style={{ background: p.bg || '#0d0d0d' }}
         onClick={() => setPaused(x => !x)}
       >
-        <div className="feed-media-emoji">{p.emoji}</div>
+        {p.emoji && <div className="feed-media-emoji">{p.emoji}</div>}
       </div>
+
+      {/* Bottom-heavy gradient overlay */}
       <div className="feed-overlay" />
 
       {/* Pause indicator */}
-      <div className={`feed-play ${paused ? '' : 'hidden'}`}>
+      <div className="feed-play">
         <i className="fas fa-play" />
       </div>
 
-      {/* ── TOP NAV: Live · For You · Nearby (no background) ── */}
+      {/* ── TOP BAR: Live · For You · Nearby ──
+           Sits at physical top of screen, clears notch via safe-area padding */}
       <div className="feed-top-bar">
-        <button className="feed-tab tab-live" onClick={onLive}>Live</button>
+        <button className="feed-tab" onClick={onLive}>Live</button>
         <button className="feed-tab active">For You</button>
         <button className="feed-tab">Nearby</button>
       </div>
-      <div className="feed-search-icon">
+      <div className="feed-search-icon" onClick={() => showToast('Search...')}>
         <i className="fas fa-search" />
       </div>
 
-      {/* ── SUB NAV: transparent white pills ── */}
+      {/* ── CATEGORY PILLS (below top bar) ── */}
       <div className="feed-cats">
         {CATS.map((c, i) => (
           <button
@@ -56,62 +59,75 @@ export default function FeedCard({ post: p, seller, showToast, onLive }) {
             className={`feed-cat ${activeCat === c ? 'active' : ''}`}
             onClick={() => setActiveCat(c)}
           >
-            {i === 0 && <i className="fas fa-th" style={{fontSize:10}} />}
+            {i === 0 && <i className="fas fa-th" style={{ fontSize: 10 }} />}
             {c}
           </button>
         ))}
       </div>
 
-      {/* ── RIGHT ACTIONS ── */}
+      {/* ── RIGHT ACTION STRIP ── */}
       <div className="feed-actions">
         {/* Like */}
-        <div className="feed-action-btn" onClick={() => { setLiked(l=>!l); setLikes(n => liked ? n-1 : n+1) }}>
-          <i className={`fas fa-heart ${liked ? 'liked' : ''}`} />
+        <div
+          className="feed-action-btn"
+          onClick={() => {
+            setLiked(l => !l)
+            setLikes(n => liked ? n - 1 : n + 1)
+          }}
+        >
+          <i className={`fas fa-heart${liked ? ' liked' : ''}`} />
           <span className="feed-action-count">{fmt(likes)}</span>
         </div>
+
         {/* Comment */}
-        <div className="feed-action-btn" onClick={() => showToast('💬 Comments...')}>
+        <div className="feed-action-btn" onClick={() => showToast('💬 Comments coming soon...')}>
           <i className="fas fa-comment" />
-          <span className="feed-action-count">{fmt(p.comments_count)}</span>
+          <span className="feed-action-count">{fmt(p.comments_count || 0)}</span>
         </div>
+
         {/* Save */}
-        <div className="feed-action-btn" onClick={() => { setSaved(s=>!s); showToast(saved?'Removed from saved':'🔖 Saved!') }}>
-          <i className={`fas fa-bookmark ${saved ? 'liked' : ''}`} />
-          <span className="feed-action-count">{fmt(p.saves_count * 220)}</span>
+        <div
+          className="feed-action-btn"
+          onClick={() => {
+            setSaved(s => !s)
+            showToast(saved ? 'Removed from saved' : '🔖 Saved!')
+          }}
+        >
+          <i className={`fas fa-bookmark${saved ? ' saved' : ''}`} />
+          <span className="feed-action-count">{fmt(p.saves_count || 0)}</span>
         </div>
+
         {/* Share */}
         <div className="feed-action-btn" onClick={() => showToast('🔗 Link copied!')}>
           <i className="fas fa-share-nodes" />
-          <span className="feed-action-count">{fmt(p.shares_count)}</span>
+          <span className="feed-action-count">{fmt(p.shares_count || 0)}</span>
         </div>
+
         {/* Seller avatar */}
-        <div className="feed-action-btn">
+        <div className="feed-action-btn" onClick={() => showToast(`View ${seller?.name || 'Seller'}'s store`)}>
           <div
             className="feed-seller-av feed-action-av"
-            style={{ background: seller.color }}
+            style={{ background: seller?.color || '#7C3AED' }}
           >
-            {seller.initials}
+            {seller?.initials || '?'}
           </div>
         </div>
       </div>
 
-      {/* ── BOTTOM INFO ── */}
+      {/* ── BOTTOM INFO BLOCK ── */}
       <div className="feed-info">
 
-        {/* Product name pill */}
-        <div className="feed-product-pill">
-          <div className="feed-product-pill-icon">🏷️</div>
-          <span className="feed-product-pill-name">{p.title}</span>
-        </div>
-
-        {/* Seller + Follow */}
+        {/* Seller row */}
         <div className="feed-seller-row">
-          <div className="feed-seller-av" style={{ background: seller.color }}>
-            {seller.initials}
+          <div
+            className="feed-seller-av"
+            style={{ background: seller?.color || '#7C3AED' }}
+          >
+            {seller?.initials || '?'}
           </div>
           <div className="feed-seller-name-txt">
-            {seller.name}
-            {seller.verified && <span className="feed-verified">✓</span>}
+            {seller?.name || ''}
+            {seller?.verified && <span className="feed-verified">✓</span>}
           </div>
           <button
             className="feed-follow-btn"
@@ -121,32 +137,54 @@ export default function FeedCard({ post: p, seller, showToast, onLive }) {
           </button>
         </div>
 
-        {/* Price row */}
-        <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:3}}>
-          <span className="feed-price">{priceStr}</span>
-          <span className="price-strike">{origStr}</span>
-          <span className="price-discount">{disc}</span>
-        </div>
+        {/* Product title */}
+        {p.title && (
+          <div className="feed-product-title">{p.title}</div>
+        )}
 
-        {/* Specs line */}
-        <div style={{fontSize:13,color:'rgba(255,255,255,0.7)',marginBottom:8}}>
-          {p.description}
-        </div>
+        {/* Description */}
+        {p.description && (
+          <div className="feed-product-desc">{p.description}</div>
+        )}
+
+        {/* Trust badges */}
+        {p.trust_badges?.length > 0 && (
+          <div className="feed-badges-row">
+            {p.trust_badges.map(b => (
+              <span key={b} className="feed-badge">
+                {b === 'Verified Seller'     && <i className="fas fa-shield-halved" style={{ fontSize: 9, color: '#22C55E' }} />}
+                {b === 'Free Delivery'       && <i className="fas fa-truck" style={{ fontSize: 9, color: '#3B82F6' }} />}
+                {b === 'Delivery Available'  && <i className="fas fa-truck" style={{ fontSize: 9, color: '#3B82F6' }} />}
+                {b === '7 Days Return'       && <i className="fas fa-rotate-left" style={{ fontSize: 9, color: '#F59E0B' }} />}
+                {b}
+              </span>
+            ))}
+          </div>
+        )}
+
+        {/* Price row */}
+        {priceStr && (
+          <div className="feed-price-row">
+            <span className="feed-price">{priceStr}</span>
+            {origStr  && <span className="feed-price-orig">{origStr}</span>}
+            {discStr  && <span className="feed-price-badge">{discStr}</span>}
+          </div>
+        )}
 
         {/* CTA buttons */}
         <div className="feed-cta-row">
           <button
-            className="feed-btn-details"
-            onClick={() => showToast('🛍️ Opening checkout...')}
+            className="feed-btn-buy"
+            onClick={() => showToast('🛍️ Checkout coming soon...')}
           >
-            <i className="fas fa-bag-shopping" style={{fontSize:12}} />
+            <i className="fas fa-bag-shopping" style={{ fontSize: 12 }} />
             Buy Now
           </button>
           <button
             className="feed-btn-chat"
-            onClick={() => showToast('💬 Opening chat...')}
+            onClick={() => showToast('💬 Chat coming soon...')}
           >
-            <i className="fas fa-comment" style={{fontSize:12}} />
+            <i className="fas fa-comment" style={{ fontSize: 12 }} />
             Chat with Seller
           </button>
         </div>
