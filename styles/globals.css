@@ -29,7 +29,7 @@
   --text3:        #71717A;
   --text-muted:   #52525B;
 
-  --nav-h:        68px;
+  --nav-h:        50px;
   --safe-bottom:  env(safe-area-inset-bottom, 0px);
 
   --r-sm:   8px;
@@ -62,7 +62,10 @@ body { background: #000; }
 
 /* ── SCREENS ── */
 .screen {
-  position: absolute; inset: 0;
+  position: absolute;
+  /* top: below status bar via safe area */
+  top: env(safe-area-inset-top, 0px);
+  left: 0; right: 0;
   bottom: calc(var(--nav-h) + var(--safe-bottom));
   overflow-y: auto; overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
@@ -70,7 +73,7 @@ body { background: #000; }
   display: none;
 }
 .screen.active  { display: block; }
-.screen-feed    { bottom: 0; top: 0; }   /* feed is full bleed — covers entire screen incl. status bar */
+.screen-feed    { top: 0; bottom: 0; }   /* feed is full bleed — manages its own safe areas */
 
 /* ── BOTTOM NAV ── */
 .bottom-nav {
@@ -78,47 +81,48 @@ body { background: #000; }
   max-width: 430px; margin: 0 auto;
   height: calc(var(--nav-h) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
-  background: rgba(0,0,0,0.92);
+  background: rgba(0,0,0,0.95);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid rgba(255,255,255,0.07);
   display: flex; align-items: center; justify-content: space-around;
   z-index: 100;
 }
 .nav-item {
   flex: 1; display: flex; flex-direction: column;
-  align-items: center; justify-content: center; gap: 4px;
+  align-items: center; justify-content: center; gap: 3px;
   background: none; border: none; cursor: pointer;
-  color: rgba(255,255,255,0.55);
-  font-size: 11px; font-weight: 500;
+  color: rgba(255,255,255,0.45);
+  font-size: 10px; font-weight: 500;
   font-family: 'Inter', sans-serif;
-  padding: 6px 0; transition: color 0.2s;
+  padding: 4px 0; transition: color 0.2s;
   position: relative;
 }
-.nav-item i { font-size: 22px; }
+.nav-item i { font-size: 20px; }
 .nav-item.active { color: var(--accent); }
 .nav-badge {
-  position: absolute; top: 2px; right: calc(50% - 18px);
+  position: absolute; top: 0px; right: calc(50% - 16px);
   background: var(--accent); color: white;
   font-size: 9px; font-weight: 800;
-  border-radius: var(--r-full); min-width: 16px; height: 16px;
+  border-radius: var(--r-full); min-width: 15px; height: 15px;
   display: flex; align-items: center; justify-content: center;
-  padding: 0 4px; border: 1.5px solid #000;
+  padding: 0 3px; border: 1.5px solid #000;
 }
 .nav-center-btn {
-  width: 54px; height: 54px; border-radius: 16px;
+  width: 44px; height: 44px; border-radius: 14px;
   background: var(--accent);
   display: flex; align-items: center; justify-content: center;
-  box-shadow: 0 4px 16px var(--accent-glow);
+  box-shadow: 0 4px 14px var(--accent-glow);
 }
-.nav-center-btn i { font-size: 22px; color: white; }
+.nav-center-btn i { font-size: 20px; color: white; }
 
 /* ── PAGE HEADER ── */
 .page-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 16px 12px;
+  /* The screen already starts below the status bar, no extra safe-area needed here */
   position: sticky; top: 0; z-index: 10;
-  background: rgba(0,0,0,0.88);
+  background: rgba(0,0,0,0.92);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
