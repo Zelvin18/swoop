@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import Head from 'next/head'
+import { useRouter } from 'next/router'
 import FeedPage from '../components/FeedPage'
 import RequestsPage from '../components/RequestsPage'
 import InboxPage from '../components/InboxPage'
@@ -7,11 +8,32 @@ import ProfilePage from '../components/ProfilePage'
 import LivePage from '../components/LivePage'
 import AddPostModal from '../components/AddPostModal'
 import Toast from '../components/Toast'
+import { supabase } from '../lib/supabase'
 
 export default function Home() {
-  const [activeTab, setActiveTab]   = useState('home')
+  const router = useRouter()
+  const [activeTab, setActiveTab]     = useState('home')
   const [showAddPost, setShowAddPost] = useState(false)
-  const [toast, setToast]           = useState({ show:false, msg:'' })
+  const [toast, setToast]             = useState({ show:false, msg:'' })
+  const [user, setUser]               = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  useEffect(() => {
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      setAuthLoading(false)
+      if (!session) router.replace('/login')
+    })
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      if (!session) router.replace('/login')
+    })
+
+    return () => subscription.unsubscribe()
+  }, [router])
 
   // Global toast helper
   const showToast = (msg) => {
@@ -23,6 +45,35 @@ export default function Home() {
     if (tab === 'add') { setShowAddPost(true); return }
     setActiveTab(tab)
   }
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.replace('/login')
+  }
+
+  // Show blank screen while checking auth
+  if (authLoading) {
+    return (
+      <div style={{
+        position:'fixed', inset:0, background:'#000',
+        display:'flex', alignItems:'center', justifyContent:'center',
+        flexDirection:'column', gap:8,
+      }}>
+        <div style={{
+          fontSize:52, lineHeight:1,
+          background:'linear-gradient(135deg,#C026D3,#FF3366,#F97316)',
+          WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+        }}>∞</div>
+        <div style={{
+          fontSize:32, fontWeight:900, letterSpacing:'-1px',
+          background:'linear-gradient(135deg,#C026D3,#FF3366,#F97316)',
+          WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent',
+        }}>swoop</div>
+      </div>
+    )
+  }
+
+  if (!user) return null
 
   return (
     <>
@@ -59,7 +110,7 @@ export default function Home() {
         </div>
 
         <div className={`screen ${activeTab==='profile'?'active':''}`} style={{background:'#000'}}>
-          <ProfilePage showToast={showToast} onWallet={() => showToast('Opening wallet...')} />
+          <ProfilePage showToast={showToast} onWallet={() => showToast('Opening wallet...')} user={user} onSignOut={handleSignOut} />
         </div>
 
         {/* Bottom Nav */}
