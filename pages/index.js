@@ -1,78 +1,110 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+import { useState, useEffect } from 'react'
+import Head from 'next/head'
+import FeedPage from '../components/FeedPage'
+import RequestsPage from '../components/RequestsPage'
+import InboxPage from '../components/InboxPage'
+import ProfilePage from '../components/ProfilePage'
+import LivePage from '../components/LivePage'
+import AddPostModal from '../components/AddPostModal'
+import Toast from '../components/Toast'
 
 export default function Home() {
+  const [activeTab, setActiveTab]   = useState('home')
+  const [showAddPost, setShowAddPost] = useState(false)
+  const [toast, setToast]           = useState({ show:false, msg:'' })
+
+  // Global toast helper
+  const showToast = (msg) => {
+    setToast({ show:true, msg })
+    setTimeout(() => setToast({ show:false, msg:'' }), 2200)
+  }
+
+  const handleNav = (tab) => {
+    if (tab === 'add') { setShowAddPost(true); return }
+    setActiveTab(tab)
+  }
+
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black`}
-    >
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the index.js file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      <Head>
+        <title>Swoop Uganda — Shop. Stream. Connect.</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no" />
+        <meta name="description" content="Uganda's social commerce marketplace — buy, sell, stream live." />
+      </Head>
+
+      <div className="app-shell">
+
+        {/* Splash */}
+        <div id="splash" className="splash">
+          <div className="splash-icon">∞</div>
+          <div className="splash-name">swoop</div>
+          <div className="splash-tag">SHOP. STREAM. CONNECT.</div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs/pages/getting-started?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Screens */}
+        <div className={`screen screen-feed ${activeTab==='home'?'active':''}`}>
+          <FeedPage showToast={showToast} onTabChange={handleNav} />
         </div>
-      </main>
-    </div>
-  );
+
+        <div className={`screen ${activeTab==='live'?'active':''}`} style={{background:'#000'}}>
+          <LivePage showToast={showToast} />
+        </div>
+
+        <div className={`screen ${activeTab==='requests'?'active':''}`} style={{background:'#000'}}>
+          <RequestsPage showToast={showToast} />
+        </div>
+
+        <div className={`screen ${activeTab==='inbox'?'active':''}`} style={{background:'#000'}}>
+          <InboxPage showToast={showToast} />
+        </div>
+
+        <div className={`screen ${activeTab==='profile'?'active':''}`} style={{background:'#000'}}>
+          <ProfilePage showToast={showToast} onWallet={() => showToast('Opening wallet...')} />
+        </div>
+
+        {/* Bottom Nav */}
+        <nav className="bottom-nav">
+          {[
+            { id:'home',     icon:'fa-house',           label:'Home'      },
+            { id:'requests', icon:'fa-magnifying-glass', label:'Requests'  },
+            { id:'add',      icon:'fa-plus',             label:null        },
+            { id:'inbox',    icon:'fa-comments',         label:'Inbox', badge:12 },
+            { id:'profile',  icon:'fa-user',             label:'Profile'   },
+          ].map(item => {
+            if (item.id === 'add') return (
+              <button key="add" className="nav-item nav-center" onClick={() => handleNav('add')}>
+                <div className="nav-center-btn">
+                  <i className="fas fa-plus" style={{color:'white',fontSize:22}} />
+                </div>
+              </button>
+            )
+            const active = activeTab === item.id
+            return (
+              <button
+                key={item.id}
+                className={`nav-item ${active ? 'active' : ''}`}
+                onClick={() => handleNav(item.id)}
+              >
+                <div style={{position:'relative',display:'inline-flex'}}>
+                  <i className={`fas ${item.icon}`} />
+                  {item.badge && (
+                    <span className="nav-badge">{item.badge}</span>
+                  )}
+                </div>
+                {item.label && <span>{item.label}</span>}
+              </button>
+            )
+          })}
+        </nav>
+
+        {/* Add Post Modal */}
+        {showAddPost && (
+          <AddPostModal onClose={() => setShowAddPost(false)} showToast={showToast} />
+        )}
+
+        {/* Toast */}
+        <Toast msg={toast.msg} show={toast.show} />
+      </div>
+    </>
+  )
 }

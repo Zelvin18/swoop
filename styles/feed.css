@@ -1,0 +1,326 @@
+/* ============================================================
+   FEED — Instagram Reels-inspired layout
+   Max image visibility, minimal overlay, clean bottom info
+   ============================================================ */
+
+.feed-container {
+  position: absolute;
+  inset: 0;
+  overflow-y: scroll;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.feed-container::-webkit-scrollbar { display: none; }
+
+/* ── FULL SCREEN CARD ── */
+.feed-card {
+  width: 100%;
+  height: 100svh;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+  position: relative;
+  overflow: hidden;
+  background: #000;
+  flex-shrink: 0;
+}
+
+/* Full-screen background image */
+.feed-media-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%; height: 100%;
+  background-size: cover;
+  background-position: center;
+}
+.feed-media-emoji {
+  position: absolute;
+  top: 40%; left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 180px;
+  opacity: 0.22;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Very subtle gradient ONLY at the very bottom — keeps image visible */
+.feed-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent 55%,
+    rgba(0,0,0,0.45) 75%,
+    rgba(0,0,0,0.78) 90%,
+    rgba(0,0,0,0.88) 100%
+  );
+  pointer-events: none;
+}
+
+/* Pause icon */
+.feed-play {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 64px; height: 64px; border-radius: 50%;
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  pointer-events: none; opacity: 0; transition: opacity 0.2s; z-index: 15;
+}
+.feed-card.paused .feed-play { opacity: 1; }
+.feed-play i { font-size: 26px; color: white; }
+
+/* ── TOP NAV: Live · For You · Nearby ── */
+/* No background — completely transparent over the image */
+.feed-top-bar {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding-top: calc(env(safe-area-inset-top, 44px) + 8px);
+  padding-bottom: 10px;
+}
+.feed-tab {
+  background: none; border: none;
+  color: rgba(255,255,255,0.65);
+  font-size: 16px; font-weight: 600;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer; padding: 2px 0;
+  position: relative;
+  transition: color 0.2s;
+  letter-spacing: -0.2px;
+}
+.feed-tab.active {
+  color: white;
+  font-weight: 800;
+}
+.feed-tab.active::after {
+  content: '';
+  position: absolute; bottom: -5px; left: 50%;
+  transform: translateX(-50%);
+  width: 20px; height: 3px;
+  background: white; border-radius: 10px;
+}
+/* Search icon top right */
+.feed-search-icon {
+  position: absolute;
+  right: 16px;
+  top: calc(env(safe-area-inset-top, 44px) + 10px);
+  width: 34px; height: 34px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: white; font-size: 18px;
+}
+
+/* ── SUB NAV: All · Phones · Fashion... ── */
+/* Transparent white pills, sits just below the main nav */
+.feed-cats {
+  position: absolute;
+  left: 0; right: 0;
+  top: calc(env(safe-area-inset-top, 44px) + 52px);
+  display: flex; gap: 8px;
+  padding: 0 14px;
+  overflow-x: auto;
+  z-index: 20;
+  scrollbar-width: none;
+}
+.feed-cats::-webkit-scrollbar { display: none; }
+.feed-cat {
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.2);
+  font-size: 13px; font-weight: 500;
+  color: rgba(255,255,255,0.9);
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; gap: 4px;
+  transition: all 0.2s;
+}
+.feed-cat.active {
+  background: rgba(255,255,255,0.28);
+  border-color: rgba(255,255,255,0.5);
+  color: white;
+  font-weight: 700;
+}
+
+/* ── RIGHT ACTION STRIP ──
+   Anchored so the seller avatar (last item) aligns with the price row.
+
+   Info block height from bottom of nav upward:
+     padding-bottom:        10px
+     CTA row height:        42px  (11px padding top+bottom + ~20px content)
+     margin-top CTA:         6px
+     specs line:            20px
+     margin-bottom specs:    8px
+     price row height:      28px
+   ─────────────────────────────
+   Price row TOP from nav:  114px
+
+   Avatar is 38px tall, so its centre is at 114 + 19 = 133px from nav.
+   We want the BOTTOM of the strip = top of avatar = 114px from nav.
+   Add 4px breathing room → 118px.                                        */
+.feed-actions {
+  position: absolute;
+  right: 12px;
+  bottom: calc(var(--nav-h) + var(--safe-bottom) + 86px);
+  display: flex; flex-direction: column;
+  align-items: center; gap: 18px;
+  z-index: 20;
+}
+.feed-action-btn {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 5px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.feed-action-btn i {
+  font-size: 28px; color: white;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.7));
+  transition: transform 0.15s;
+}
+.feed-action-btn:active i { transform: scale(0.82); }
+.feed-action-btn i.liked { color: #FF3366; }
+.feed-action-count {
+  font-size: 12px; font-weight: 600; color: white;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+/* Seller avatar in right strip */
+.feed-action-av {
+  width: 38px; height: 38px; border-radius: 50%;
+  border: 2px solid white;
+  font-size: 12px; font-weight: 900;
+}
+
+/* ── BOTTOM INFO BLOCK ── */
+/* Minimal — product name pill, seller row, price, two buttons */
+.feed-info {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(var(--nav-h) + var(--safe-bottom));
+  z-index: 20;
+  padding: 0 14px 10px;
+}
+
+/* Product name pill */
+.feed-product-pill {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: rgba(60,60,60,0.72);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 7px 14px;
+  margin-bottom: 4px;
+  max-width: 85%;
+}
+.feed-product-pill-icon {
+  width: 18px; height: 18px; border-radius: 4px;
+  background: rgba(255,255,255,0.2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px;
+}
+.feed-product-pill-name {
+  font-size: 15px; font-weight: 700; color: white;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  letter-spacing: -0.2px;
+}
+
+/* Seller row */
+.feed-seller-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 3px;
+}
+.feed-seller-av {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 900; color: white;
+  flex-shrink: 0;
+}
+.feed-seller-name-txt {
+  font-size: 14px; font-weight: 700; color: white;
+  display: flex; align-items: center; gap: 5px;
+}
+.feed-verified {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #3B82F6;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 8px; color: white; font-weight: 900; flex-shrink: 0;
+}
+/* Follow button */
+.feed-follow-btn {
+  margin-left: 6px;
+  padding: 5px 13px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.6);
+  background: rgba(255,255,255,0.08);
+  color: white; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+.feed-follow-btn:active { background: rgba(255,255,255,0.18); }
+
+/* Price row */
+.feed-price-buy-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 2px; flex-wrap: wrap;
+}
+.feed-price {
+  font-size: 20px; font-weight: 800; color: white;
+  letter-spacing: -0.5px;
+}
+.price-strike {
+  font-size: 14px; text-decoration: line-through;
+  color: rgba(255,255,255,0.5);
+}
+.price-discount {
+  background: #FF3366; color: white;
+  font-size: 12px; font-weight: 800;
+  padding: 2px 8px; border-radius: 6px;
+}
+
+/* Two equal CTA buttons */
+.feed-cta-row {
+  display: flex; gap: 8px;
+  margin-top: 6px;
+}
+/* Buy Now — gradient (purple→pink→orange, matches profile Verify Now) */
+.feed-btn-details {
+  flex: 1; padding: 11px 0;
+  background: linear-gradient(135deg, #D946EF 0%, #F43F5E 60%, #FB923C 100%);
+  border: none;
+  border-radius: 10px;
+  color: white; font-size: 13px; font-weight: 700;
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  box-shadow: 0 4px 14px rgba(217,70,239,0.35);
+  transition: opacity 0.2s;
+}
+.feed-btn-details:active { opacity: 0.85; }
+/* Chat with Seller — dark glass */
+.feed-btn-chat {
+  flex: 1; padding: 11px 0;
+  background: rgba(255,255,255,0.10);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(255,255,255,0.28);
+  border-radius: 10px;
+  color: white; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+  transition: background 0.2s;
+}
+.feed-btn-chat:active { background: rgba(255,255,255,0.20); }
+
+/* Responsive */
+@media (max-width: 380px) {
+  .feed-product-pill-name { font-size: 14px; }
+  .feed-price { font-size: 18px; }
+  .feed-btn-details, .feed-btn-chat { font-size: 13px; }
+  .feed-action-btn i { font-size: 26px; }
+}

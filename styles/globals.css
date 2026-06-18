@@ -1,26 +1,238 @@
-@import "tailwindcss";
+/* ============================================================
+   SWOOP — Global Design System
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg:           #000000;
+  --bg2:          #0d0d0d;
+  --bg3:          #141414;
+  --card:         #181818;
+  --card2:        #1e1e1e;
+  --border:       rgba(255,255,255,0.08);
+  --border2:      rgba(255,255,255,0.14);
+
+  --accent:       #FF3366;
+  --accent-dark:  #cc1f4d;
+  --accent-glow:  rgba(255,51,102,0.4);
+
+  --purple:       #7C3AED;
+  --green:        #22C55E;
+  --orange:       #F97316;
+  --blue:         #3B82F6;
+  --amber:        #F59E0B;
+
+  --text:         #FFFFFF;
+  --text2:        #A1A1AA;
+  --text3:        #71717A;
+  --text-muted:   #52525B;
+
+  --nav-h:        68px;
+  --safe-bottom:  env(safe-area-inset-bottom, 0px);
+
+  --r-sm:   8px;
+  --r:      12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
+  --r-full: 9999px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html, body {
+  width: 100%; height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* ── APP SHELL ── */
+.app-shell {
+  position: fixed; inset: 0;
+  display: flex; flex-direction: column;
+  background: var(--bg);
+  max-width: 430px;
+  margin: 0 auto;
+}
+body { background: #000; }
+
+/* ── SCREENS ── */
+.screen {
+  position: absolute; inset: 0;
+  bottom: calc(var(--nav-h) + var(--safe-bottom));
+  overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bg);
+  display: none;
+}
+.screen.active  { display: block; }
+.screen-feed    { bottom: 0; }   /* feed is full bleed */
+
+/* ── BOTTOM NAV ── */
+.bottom-nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  max-width: 430px; margin: 0 auto;
+  height: calc(var(--nav-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  background: rgba(0,0,0,0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-around;
+  z-index: 100;
+}
+.nav-item {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 4px;
+  background: none; border: none; cursor: pointer;
+  color: rgba(255,255,255,0.55);
+  font-size: 11px; font-weight: 500;
+  font-family: 'Inter', sans-serif;
+  padding: 6px 0; transition: color 0.2s;
+  position: relative;
+}
+.nav-item i { font-size: 22px; }
+.nav-item.active { color: var(--accent); }
+.nav-badge {
+  position: absolute; top: 2px; right: calc(50% - 18px);
+  background: var(--accent); color: white;
+  font-size: 9px; font-weight: 800;
+  border-radius: var(--r-full); min-width: 16px; height: 16px;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 4px; border: 1.5px solid #000;
+}
+.nav-center-btn {
+  width: 54px; height: 54px; border-radius: 16px;
+  background: var(--accent);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+.nav-center-btn i { font-size: 22px; color: white; }
+
+/* ── PAGE HEADER ── */
+.page-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 16px 12px;
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(0,0,0,0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.page-title    { font-size: 22px; font-weight: 800; }
+.page-subtitle { font-size: 12px; color: var(--text3); margin-top: 2px; }
+.header-btn {
+  width: 36px; height: 36px; border-radius: var(--r-full);
+  background: var(--card2); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--text);
+}
+.header-btn i { font-size: 16px; }
+
+/* ── SHARED COMPONENTS ── */
+.pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 6px 14px; border-radius: var(--r-full);
+  font-size: 13px; font-weight: 600;
+  background: var(--card2); border: 1px solid var(--border);
+  color: var(--text2); cursor: pointer; white-space: nowrap;
+  transition: all 0.2s; font-family: 'Inter', sans-serif;
+}
+.pill.active {
+  background: var(--accent); border-color: transparent;
+  color: white; box-shadow: 0 2px 12px var(--accent-glow);
+}
+.pill-row {
+  display: flex; gap: 8px; padding: 0 16px 12px;
+  overflow-x: auto; scrollbar-width: none;
+}
+.pill-row::-webkit-scrollbar { display: none; }
+
+.verified-badge {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--blue);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 8px; color: white; font-weight: 900; flex-shrink: 0;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.card {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); overflow: hidden;
+}
+
+.btn-primary {
+  background: var(--accent); color: white; border: none;
+  padding: 13px; border-radius: var(--r-lg);
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  box-shadow: 0 4px 16px var(--accent-glow);
+  transition: opacity 0.2s;
+}
+.btn-primary:active { opacity: 0.85; }
+
+.btn-outline {
+  background: transparent; color: var(--text);
+  border: 1.5px solid var(--border2);
+  padding: 13px; border-radius: var(--r-lg);
+  font-size: 15px; font-weight: 600; cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; justify-content: center; gap: 7px;
+  transition: background 0.2s;
+}
+.btn-outline:active { background: var(--card2); }
+
+/* ── TOAST ── */
+.toast {
+  position: fixed;
+  bottom: calc(var(--nav-h) + 16px + var(--safe-bottom));
+  left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--card2); border: 1px solid var(--border2);
+  color: var(--text); font-size: 13px; font-weight: 500;
+  padding: 10px 20px; border-radius: var(--r-full);
+  z-index: 500; opacity: 0; transition: all 0.3s;
+  white-space: nowrap; box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+.toast.show {
+  opacity: 1; transform: translateX(-50%) translateY(0);
+}
+
+/* ── SPLASH ── */
+.splash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #000;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 4px;
+  animation: splashFade 0.4s ease 1.6s forwards;
+}
+@keyframes splashFade { to { opacity: 0; pointer-events: none; } }
+.splash-icon {
+  font-size: 68px; line-height: 1;
+  background: linear-gradient(135deg, #C026D3, #FF3366, #F97316);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.splash-name {
+  font-size: 40px; font-weight: 900; letter-spacing: -1px;
+  background: linear-gradient(135deg, #C026D3, #FF3366, #F97316);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.splash-tag {
+  font-size: 10px; font-weight: 600; letter-spacing: 3px;
+  color: var(--text3); margin-top: 4px;
+}
+
+/* ── UTILITIES ── */
+.hidden  { display: none !important; }
+.truncate { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.flex    { display: flex; }
+.gap-2   { gap: 8px; }
+.scroll-x { overflow-x: auto; scrollbar-width: none; }
+.scroll-x::-webkit-scrollbar { display: none; }
+
+@media (min-width: 430px) {
+  body { background: #111; }
 }
