@@ -74,6 +74,23 @@ body { background: #000; }
 .screen.active  { display: block; }
 .screen-feed    { top: 0; bottom: 0; }
 
+/* ── PWA STANDALONE FIX ──
+   When installed to home screen, safe-area-inset-top is already
+   handled by the phone OS — applying it again pushes content too far down.
+   display-mode: standalone only matches the installed PWA, never the browser.
+   Also fix the feed top nav which has its own safe-area padding.             */
+@media (display-mode: standalone) {
+  .screen {
+    top: 0;
+  }
+  .feed-top-nav {
+    padding-top: 0 !important;
+  }
+  .feed-search-icon {
+    top: 6px !important;
+  }
+}
+
 /* ── BOTTOM NAV ── */
 .bottom-nav {
   position: fixed; bottom: 0; left: 0; right: 0;
