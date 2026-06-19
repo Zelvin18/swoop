@@ -6,11 +6,6 @@ export default function Document() {
       <Head>
         <meta name="theme-color" content="#000000" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        {/*
-          black-translucent: status bar overlays the app (full bleed look).
-          app-shell uses padding-top: env(safe-area-inset-top) so content
-          AND tap targets both start below the status bar — no offset.
-        */}
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Swoop" />
         <meta name="mobile-web-app-capable" content="yes" />
@@ -25,6 +20,16 @@ export default function Document() {
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
         />
+        {/* Register service worker — clears stale PWA cache on every deploy */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+              navigator.serviceWorker.register('/sw.js').then(function(reg) {
+                reg.update();
+              });
+            });
+          }
+        `}} />
       </Head>
       <body>
         <Main />
