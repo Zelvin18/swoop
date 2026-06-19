@@ -56,15 +56,13 @@ html, body {
 /* ── APP SHELL ── */
 .app-shell {
   position: fixed;
-  /* Start BELOW the status bar so hit targets match visual positions */
-  top: env(safe-area-inset-top, 0px);
-  left: 0; right: 0;
-  bottom: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   display: flex; flex-direction: column;
   background: var(--bg);
   max-width: 430px;
   margin: 0 auto;
-  /* Prevent iOS PWA tap offset by ensuring layout root matches coordinate space */
+  /* iOS PWA: push entire shell below status bar so tap targets align */
+  padding-top: env(safe-area-inset-top, 0px);
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
 }

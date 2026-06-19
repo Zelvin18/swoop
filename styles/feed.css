@@ -20,8 +20,8 @@
   top: 0; left: 0; right: 0;
   max-width: 430px; margin: 0 auto;
   z-index: 30;
-  /* app-shell now starts below status bar — no extra safe-area offset needed */
-  padding-top: 8px;
+  /* app-shell padding-top handles safe area — just add small breathing room */
+  padding-top: 6px;
   pointer-events: none;
 }
 .feed-top-nav > * { pointer-events: all; }

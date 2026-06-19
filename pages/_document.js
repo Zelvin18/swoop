@@ -6,12 +6,12 @@ export default function Document() {
       <Head>
         <meta name="theme-color" content="#000000" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        {/* 
-          black = status bar sits ABOVE the app, no overlay.
-          This eliminates the iOS PWA tap coordinate offset where taps
-          register below where buttons visually appear.
+        {/*
+          black-translucent: status bar overlays the app (full bleed look).
+          app-shell uses padding-top: env(safe-area-inset-top) so content
+          AND tap targets both start below the status bar — no offset.
         */}
-        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Swoop" />
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="manifest" href="/manifest.json" />
