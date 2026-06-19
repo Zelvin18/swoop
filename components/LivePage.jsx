@@ -1,4 +1,7 @@
 import { useState } from 'react'
+import GoLiveSetupPage from './GoLiveSetupPage'
+import LiveSellingPage from './LiveSellingPage'
+import LiveSocialPage  from './LiveSocialPage'
 
 // No mock data — will load from Supabase
 const CATS = [
@@ -17,11 +20,43 @@ function fmt(n) {
 export default function LivePage({ showToast }) {
   const [activeFilter, setActiveFilter] = useState('All')
   const [notified, setNotified]         = useState({})
+  const [view, setView]                 = useState('list')   // 'list' | 'setup' | 'sell' | 'social'
+  const [liveConfig, setLiveConfig]     = useState(null)
   const filters = ['All', 'Following', 'Electronics', 'Fashion', 'Home', 'Beauty']
 
-  // Will be replaced with real Supabase data
   const streams  = []
   const upcoming = []
+
+  // Navigate to setup
+  if (view === 'setup') {
+    return (
+      <GoLiveSetupPage
+        onClose={() => setView('list')}
+        onStartSell={config  => { setLiveConfig(config);  setView('sell')   }}
+        onStartSocial={config => { setLiveConfig(config); setView('social') }}
+      />
+    )
+  }
+
+  // Sell live broadcast
+  if (view === 'sell') {
+    return (
+      <LiveSellingPage
+        config={liveConfig}
+        onEnd={() => { setView('list'); showToast('✅ Live ended!') }}
+      />
+    )
+  }
+
+  // Social live broadcast
+  if (view === 'social') {
+    return (
+      <LiveSocialPage
+        config={liveConfig}
+        onEnd={() => { setView('list'); showToast('✅ Live ended!') }}
+      />
+    )
+  }
 
   return (
     <div style={{ paddingBottom: 20 }}>
@@ -60,7 +95,7 @@ export default function LivePage({ showToast }) {
           <div style={{ fontSize: 12, color: '#A1A1AA' }}>Show your products, engage buyers and grow your sales</div>
         </div>
         <button
-          onClick={() => showToast('🎥 Live streaming coming soon...')}
+          onClick={() => setView('setup')}
           style={{
             padding: '9px 16px', background: '#EF4444', border: 'none', borderRadius: 20,
             color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
