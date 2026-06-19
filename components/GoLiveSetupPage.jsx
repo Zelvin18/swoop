@@ -494,8 +494,9 @@ const s = {
   },
   footer: {
     padding: '12px 16px',
-    paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
-    background: 'rgba(0,0,0,0.9)',
+    /* sit above the bottom nav (50px) + safe area */
+    paddingBottom: 'calc(var(--nav-h, 50px) + env(safe-area-inset-bottom, 0px) + 12px)',
+    background: 'rgba(0,0,0,0.95)',
     borderTop: '1px solid rgba(255,255,255,0.07)',
     flexShrink: 0,
   },

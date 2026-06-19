@@ -112,16 +112,20 @@ export default function LiveSocialPage({ config, onEnd }) {
         </div>
         {/* Comment */}
         <div style={s.ctrlBtn}>
-          <i className="fas fa-comment" style={{ fontSize: 24, color: 'white', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
+          <i className="fas fa-comment" style={{ fontSize: 26, color: 'white', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
           <span style={s.ctrlCount}>{fmt(comments.length)}</span>
+        </div>
+        {/* Save */}
+        <div style={s.ctrlBtn}>
+          <i className="fas fa-bookmark" style={{ fontSize: 26, color: 'white', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
         </div>
         {/* Share */}
         <div style={s.ctrlBtn}>
-          <i className="fas fa-share-nodes" style={{ fontSize: 24, color: 'white', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
+          <i className="fas fa-share-nodes" style={{ fontSize: 26, color: 'white', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
         </div>
         {/* Gift */}
         <div style={s.ctrlBtn}>
-          <i className="fas fa-gift" style={{ fontSize: 24, color: '#F59E0B', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
+          <i className="fas fa-gift" style={{ fontSize: 26, color: '#F59E0B', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
         </div>
       </div>
 
@@ -240,7 +244,7 @@ const s = {
   chatRow:      { display:'flex', alignItems:'flex-start', gap:7, marginBottom:5, animation:'fadeInUp 0.2s ease' },
   chatAvatar:   { width:20, height:20, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:8, fontWeight:900, color:'white', flexShrink:0, marginTop:1 },
 
-  commentBar:   { padding:'6px 14px', paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 6px)', background:'rgba(0,0,0,0.6)', backdropFilter:'blur(12px)' },
+  commentBar:   { padding:'6px 14px', paddingBottom:'calc(var(--nav-h, 50px) + env(safe-area-inset-bottom, 0px) + 6px)', background:'rgba(0,0,0,0.6)', backdropFilter:'blur(12px)' },
   inputWrap:    { display:'flex', alignItems:'center', gap:8, marginBottom:8 },
   commentInput: { flex:1, padding:'10px 14px', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:20, color:'white', fontSize:13, outline:'none', fontFamily:'inherit' },
   sendBtn:      { width:34, height:34, borderRadius:'50%', background:'#7C3AED', border:'none', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'white', flexShrink:0 },

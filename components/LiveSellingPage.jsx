@@ -136,17 +136,21 @@ export default function LiveSellingPage({ config, onEnd }) {
           style={{ ...s.actionBtn, marginTop: 8 }}
           onClick={() => { setLiked(l => !l); setLikes(n => liked ? n-1 : n+1) }}
         >
-          <i className={`fas fa-heart`} style={{ fontSize: 22, color: liked ? '#FF3366' : 'white', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
+          <i className="fas fa-heart" style={{ fontSize: 26, color: liked ? '#FF3366' : 'white', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
           <span style={s.actionCount}>{fmt(likes)}</span>
         </div>
         {/* Comments */}
         <div style={s.actionBtn} onClick={() => {}}>
-          <i className="fas fa-comment" style={{ fontSize: 22, color: 'white', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
+          <i className="fas fa-comment" style={{ fontSize: 26, color: 'white', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
           <span style={s.actionCount}>{fmt(comments.length)}</span>
+        </div>
+        {/* Save */}
+        <div style={s.actionBtn}>
+          <i className="fas fa-bookmark" style={{ fontSize: 26, color: 'white', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
         </div>
         {/* Share */}
         <div style={s.actionBtn}>
-          <i className="fas fa-share-nodes" style={{ fontSize: 22, color: 'white', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
+          <i className="fas fa-share-nodes" style={{ fontSize: 26, color: 'white', filter: 'drop-shadow(0 1px 4px rgba(0,0,0,0.8))' }} />
         </div>
       </div>
 
@@ -346,7 +350,7 @@ const s = {
   pinnedLabel:   { fontSize:10, fontWeight:800, color:'#FF3366', whiteSpace:'nowrap' },
   pinnedReserveBtn: { padding:'7px 14px', background:'#FF3366', border:'none', borderRadius:20, color:'white', fontSize:12, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap' },
 
-  commentBar:       { padding:'6px 14px', paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 6px)', background:'rgba(0,0,0,0.7)', backdropFilter:'blur(10px)' },
+  commentBar:       { padding:'6px 14px', paddingBottom:'calc(var(--nav-h, 50px) + env(safe-area-inset-bottom, 0px) + 6px)', background:'rgba(0,0,0,0.7)', backdropFilter:'blur(10px)' },
   commentInputWrap: { display:'flex', alignItems:'center', gap:8, marginBottom:8 },
   commentInput:     { flex:1, padding:'9px 14px', background:'rgba(255,255,255,0.1)', border:'1px solid rgba(255,255,255,0.12)', borderRadius:20, color:'white', fontSize:13, outline:'none', fontFamily:'inherit' },
   sendBtn:          { width:34, height:34, borderRadius:'50%', background:'#FF3366', border:'none', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', color:'white', flexShrink:0 },
