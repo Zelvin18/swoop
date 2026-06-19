@@ -48,23 +48,32 @@ html, body {
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
+  /* PWA: prevent elastic bounce causing layout shifts */
+  position: fixed;
+  width: 100%;
 }
 
 /* ── APP SHELL ── */
 .app-shell {
-  position: fixed; inset: 0;
+  position: fixed;
+  /* Start BELOW the status bar so hit targets match visual positions */
+  top: env(safe-area-inset-top, 0px);
+  left: 0; right: 0;
+  bottom: 0;
   display: flex; flex-direction: column;
   background: var(--bg);
   max-width: 430px;
   margin: 0 auto;
+  /* Prevent iOS PWA tap offset by ensuring layout root matches coordinate space */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 body { background: #000; }
 
 /* ── SCREENS ── */
 .screen {
   position: absolute;
-  /* top: below status bar via safe area */
-  top: env(safe-area-inset-top, 0px);
+  top: 0;          /* app-shell already starts below status bar */
   left: 0; right: 0;
   bottom: calc(var(--nav-h) + var(--safe-bottom));
   overflow-y: auto; overflow-x: hidden;
@@ -73,7 +82,8 @@ body { background: #000; }
   display: none;
 }
 .screen.active  { display: block; }
-.screen-feed    { top: 0; bottom: 0; }   /* feed is full bleed — manages its own safe areas */
+/* Feed is full bleed — it manages its own top via feed-top-nav safe area */
+.screen-feed    { top: 0; bottom: 0; }
 
 /* ── BOTTOM NAV ── */
 .bottom-nav {

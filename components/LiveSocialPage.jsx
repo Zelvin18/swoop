@@ -221,7 +221,7 @@ const s = {
   giftsArea:  { position:'absolute', right:60, bottom:260, display:'flex', flexDirection:'column-reverse', gap:8, zIndex:25, pointerEvents:'none' },
   giftFloat:  { fontSize:32, animation:'floatUp 2s ease forwards' },
 
-  topBar:     { position:'absolute', top:0, left:0, right:0, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px', paddingTop:'calc(env(safe-area-inset-top,44px) + 8px)', zIndex:20 },
+  topBar:     { position:'absolute', top:0, left:0, right:0, display:'flex', alignItems:'center', justifyContent:'space-between', padding:'12px 14px 10px', zIndex:20 },
   topLeft:    { display:'flex', alignItems:'center', gap:8 },
   hostAvatar: { width:38, height:38, borderRadius:'50%', background:'linear-gradient(135deg,#7C3AED,#3B82F6)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:900, border:'2px solid white', flexShrink:0 },
   verifiedBadge: { width:13, height:13, borderRadius:'50%', background:'#3B82F6', display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:7, color:'white', fontWeight:900 },

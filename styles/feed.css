@@ -20,7 +20,8 @@
   top: 0; left: 0; right: 0;
   max-width: 430px; margin: 0 auto;
   z-index: 30;
-  padding-top: env(safe-area-inset-top, 44px);
+  /* app-shell now starts below status bar — no extra safe-area offset needed */
+  padding-top: 8px;
   pointer-events: none;
 }
 .feed-top-nav > * { pointer-events: all; }
@@ -50,7 +51,7 @@
 .feed-search-icon {
   position: fixed;
   right: 16px;
-  top: env(safe-area-inset-top, 44px);
+  top: 8px;
   height: 44px;
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; color: white; font-size: 18px;

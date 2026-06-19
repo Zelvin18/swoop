@@ -394,8 +394,7 @@ const s = {
   },
   header: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-    padding: '16px 16px 12px',
-    paddingTop: 'calc(env(safe-area-inset-top, 44px) + 12px)',
+    padding: '14px 16px 12px',
     background: 'rgba(0,0,0,0.9)',
     borderBottom: '1px solid rgba(255,255,255,0.07)',
     flexShrink: 0,
