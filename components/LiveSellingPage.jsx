@@ -516,6 +516,8 @@ const S = {
   endCard: {
     width:'100%', background:'#141414',
     borderRadius:'20px 20px 0 0',
-    padding:'24px 20px 32px',
+    padding:'24px 20px',
+    /* push above bottom nav so Keep Streaming button is fully visible */
+    paddingBottom:'calc(var(--nav-h, 50px) + var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 16px)',
   },
 }

@@ -252,5 +252,5 @@ const s = {
   toolBtn:      { display:'flex', flexDirection:'column', alignItems:'center', gap:3, background:'none', border:'none', cursor:'pointer', padding:'4px 12px' },
 
   endOverlay: { position:'absolute', inset:0, background:'rgba(0,0,0,0.75)', display:'flex', alignItems:'flex-end', zIndex:300 },
-  endCard:    { width:'100%', background:'#141414', borderRadius:'20px 20px 0 0', padding:'24px 20px', paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 20px)' },
+  endCard:    { width:'100%', background:'#141414', borderRadius:'20px 20px 0 0', padding:'24px 20px', paddingBottom:'calc(var(--nav-h, 50px) + var(--safe-bottom, env(safe-area-inset-bottom, 0px)) + 16px)' },
 }
