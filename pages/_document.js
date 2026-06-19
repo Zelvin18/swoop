@@ -20,16 +20,6 @@ export default function Document() {
           rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
         />
-        {/* Register service worker — clears stale PWA cache on every deploy */}
-        <script dangerouslySetInnerHTML={{ __html: `
-          if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-              navigator.serviceWorker.register('/sw.js').then(function(reg) {
-                reg.update();
-              });
-            });
-          }
-        `}} />
       </Head>
       <body>
         <Main />

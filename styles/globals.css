@@ -52,8 +52,7 @@ html, body {
 
 /* ── APP SHELL ── */
 .app-shell {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
+  position: fixed; inset: 0;
   display: flex; flex-direction: column;
   background: var(--bg);
   max-width: 430px;
@@ -64,7 +63,7 @@ body { background: #000; }
 /* ── SCREENS ── */
 .screen {
   position: absolute;
-  top: 0;          /* app-shell already starts below status bar */
+  top: env(safe-area-inset-top, 0px);
   left: 0; right: 0;
   bottom: calc(var(--nav-h) + var(--safe-bottom));
   overflow-y: auto; overflow-x: hidden;
@@ -73,7 +72,6 @@ body { background: #000; }
   display: none;
 }
 .screen.active  { display: block; }
-/* Feed is full bleed — it manages its own top via feed-top-nav safe area */
 .screen-feed    { top: 0; bottom: 0; }
 
 /* ── BOTTOM NAV ── */
@@ -121,7 +119,6 @@ body { background: #000; }
 .page-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 16px 12px;
-  /* The screen already starts below the status bar, no extra safe-area needed here */
   position: sticky; top: 0; z-index: 10;
   background: rgba(0,0,0,0.92);
   backdrop-filter: blur(16px);
