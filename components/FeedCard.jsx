@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
-import { formatUGX, discountPct, fmtCount, likePost, unlikePost, savePost, unsavePost, sharePost, recordView } from '../lib/feed'
+import { formatUGX, discountPct, fmtCount, fmtDistance, likePost, unlikePost, savePost, unsavePost, sharePost, recordView } from '../lib/feed'
 
-export default function FeedCard({ post: p, currentUser, initialLiked = false, initialSaved = false, onOpenComments, onChatSeller }) {
+export default function FeedCard({ post: p, currentUser, initialLiked = false, initialSaved = false, distanceKm = null, onOpenComments, onChatSeller }) {
   const [liked,     setLiked]     = useState(initialLiked)
   const [saved,     setSaved]     = useState(initialSaved)
   const [likes,     setLikes]     = useState(p.likes_count || 0)
@@ -143,6 +143,22 @@ export default function FeedCard({ post: p, currentUser, initialLiked = false, i
 
       {/* ── BOTTOM INFO BLOCK ── */}
       <div className="feed-info">
+
+        {/* Distance badge — only shown in Nearby tab */}
+        {distanceKm !== null && (
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: 5,
+            background: 'rgba(34,197,94,0.15)',
+            border: '1px solid rgba(34,197,94,0.3)',
+            backdropFilter: 'blur(8px)',
+            borderRadius: 20, padding: '3px 10px',
+            fontSize: 11, fontWeight: 700, color: '#22C55E',
+            marginBottom: 6,
+          }}>
+            <i className="fas fa-location-dot" style={{ fontSize: 10 }} />
+            {fmtDistance(distanceKm)}
+          </div>
+        )}
 
         {/* Seller row */}
         <div className="feed-seller-row">
