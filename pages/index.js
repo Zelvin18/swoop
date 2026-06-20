@@ -102,7 +102,7 @@ export default function Home() {
         </div>
 
         <div className={`screen ${activeTab==='requests'?'active':''}`} style={{background:'#000'}}>
-          <RequestsPage showToast={showToast} />
+          <RequestsPage showToast={showToast} currentUser={user} />
         </div>
 
         <div className={`screen ${activeTab==='inbox'?'active':''}`} style={{background:'#000'}}>
