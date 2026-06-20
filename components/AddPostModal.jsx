@@ -14,7 +14,7 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
 
   return (
     <div style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(4px)',display:'flex',alignItems:'flex-end'}}>
-      <div style={{width:'100%',background:'#0d0d0d',borderRadius:'20px 20px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',maxHeight:'92vh',overflowY:'auto',scrollbarWidth:'none'}}>
+      <div style={{width:'100%',background:'#0d0d0d',borderRadius:'20px 20px 0 0',border:'1px solid rgba(255,255,255,0.08)',borderBottom:'none',maxHeight:'calc(100dvh - 100px)',overflowY:'auto',scrollbarWidth:'none'}}>
 
         {/* Handle */}
         <div style={{width:40,height:4,background:'rgba(255,255,255,0.15)',borderRadius:20,margin:'10px auto 4px'}} />
@@ -133,7 +133,7 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
         </div>
 
         {/* CTAs */}
-        <div style={{display:'flex',gap:10,padding:'0 16px 32px'}}>
+        <div style={{display:'flex',gap:10,padding:'0 16px',paddingBottom:'calc(var(--nav-h, 50px) + env(safe-area-inset-bottom, 0px) + 12px)'}}>
           <button onClick={onClose} style={{flex:1,padding:14,background:'#141414',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,color:'white',fontSize:15,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6,fontFamily:'inherit'}}>
             <i className="fas fa-floppy-disk" style={{fontSize:14}} /> Save Draft
           </button>

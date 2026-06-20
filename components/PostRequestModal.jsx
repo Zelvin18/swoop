@@ -366,7 +366,9 @@ const S = {
     background: '#0d0d0d', borderRadius: '22px 22px 0 0',
     border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none',
     zIndex: 301, display: 'flex', flexDirection: 'column',
-    maxHeight: '92vh', fontFamily: "'Inter',sans-serif", color: '#fff',
+    /* cap height so it never covers the full screen — leaves breathing room at top */
+    maxHeight: 'calc(100dvh - 100px)',
+    fontFamily: "'Inter',sans-serif", color: '#fff',
   },
   handle: { width: 40, height: 4, borderRadius: 20, background: 'rgba(255,255,255,0.15)', margin: '10px auto 0', flexShrink: 0 },
   header: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '14px 18px 8px', flexShrink: 0 },
@@ -429,7 +431,8 @@ const S = {
   summaryTitle: { fontSize: 13, fontWeight: 700, marginBottom: 10, color: '#A1A1AA', letterSpacing: 0.3 },
   footer: {
     padding: '12px 18px',
-    paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
+    /* push above the bottom nav + safe area so buttons are always fully visible */
+    paddingBottom: 'calc(var(--nav-h, 50px) + env(safe-area-inset-bottom, 0px) + 12px)',
     borderTop: '1px solid rgba(255,255,255,0.07)',
     flexShrink: 0, background: '#0d0d0d',
   },

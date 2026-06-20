@@ -250,7 +250,7 @@ const S = {
   inputBar: {
     display: 'flex', alignItems: 'center', gap: 10,
     padding: '10px 14px',
-    paddingBottom: 'calc(10px + env(safe-area-inset-bottom, 0px))',
+    paddingBottom: 'calc(var(--nav-h, 50px) + env(safe-area-inset-bottom, 0px) + 10px)',
     borderTop: '1px solid rgba(255,255,255,0.07)',
     background: '#0d0d0d', flexShrink: 0,
   },

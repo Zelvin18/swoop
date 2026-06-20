@@ -269,7 +269,7 @@ function MakeOfferForm({ request, currentUser, onCancel, onSubmitted }) {
 
 const S = {
   backdrop: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 350, backdropFilter: 'blur(3px)' },
-  sheet: { position: 'fixed', bottom: 0, left: 0, right: 0, maxWidth: 430, margin: '0 auto', background: '#0d0d0d', borderRadius: '22px 22px 0 0', border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none', zIndex: 351, display: 'flex', flexDirection: 'column', maxHeight: '85vh', fontFamily: "'Inter',sans-serif", color: '#fff' },
+  sheet: { position: 'fixed', bottom: 0, left: 0, right: 0, maxWidth: 430, margin: '0 auto', background: '#0d0d0d', borderRadius: '22px 22px 0 0', border: '1px solid rgba(255,255,255,0.08)', borderBottom: 'none', zIndex: 351, display: 'flex', flexDirection: 'column', maxHeight: 'calc(100dvh - 100px)', fontFamily: "'Inter',sans-serif", color: '#fff' },
   handle: { width: 40, height: 4, borderRadius: 20, background: 'rgba(255,255,255,0.15)', margin: '10px auto 0', flexShrink: 0 },
   header: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '14px 16px 10px', borderBottom: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 },
   headerTitle: { fontSize: 17, fontWeight: 800, marginBottom: 2 },
