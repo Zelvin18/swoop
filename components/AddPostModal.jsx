@@ -1,11 +1,16 @@
 import { useState } from 'react'
+import { createPost } from '../lib/feed'
 
-export default function AddPostModal({ onClose, showToast }) {
-  const [title, setTitle]       = useState('iPhone 13 Pro Max 256GB – Excellent Condition')
-  const [price, setPrice]       = useState('3800000')
-  const [desc, setDesc]         = useState('Clean phone, no scratches, battery health 92%.\nComes with box, charger and cable.')
+export default function AddPostModal({ onClose, showToast, currentUser }) {
+  const [title, setTitle]       = useState('')
+  const [price, setPrice]       = useState('')
+  const [desc, setDesc]         = useState('')
+  const [category, setCategory] = useState('Phones')
+  const [condition, setCondition] = useState('Used – Like New')
+  const [brand, setBrand]       = useState('')
   const [negotiable, setNeg]    = useState(false)
   const [delivery, setDelivery] = useState(true)
+  const [posting, setPosting]   = useState(false)
 
   return (
     <div style={{position:'fixed',inset:0,zIndex:300,background:'rgba(0,0,0,0.75)',backdropFilter:'blur(4px)',display:'flex',alignItems:'flex-end'}}>
@@ -134,6 +139,34 @@ export default function AddPostModal({ onClose, showToast }) {
           </button>
           <button onClick={() => {showToast('🚀 Post published!'); onClose()}} style={{flex:2,padding:14,background:'linear-gradient(135deg,#D946EF,#F43F5E,#FB923C)',border:'none',borderRadius:20,color:'white',fontSize:15,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6,boxShadow:'0 4px 20px rgba(228,29,72,0.4)',fontFamily:'inherit'}}>
             <i className="fas fa-paper-plane" style={{fontSize:14}} /> Post Now
+          </button>
+          <button
+            onClick={async () => {
+              if (!title.trim() || !price) { showToast('Add a title and price first'); return }
+              if (!currentUser) { showToast('Sign in to post'); return }
+              setPosting(true)
+              const post = await createPost({
+                sellerId: currentUser.id,
+                title: title.trim(),
+                description: desc.trim(),
+                price,
+                category,
+                condition,
+                brand,
+                isNegotiable: negotiable,
+                deliveryAvailable: delivery,
+              })
+              setPosting(false)
+              if (post) { showToast('🚀 Post published!'); onClose() }
+              else        showToast('Failed to post. Try again.')
+            }}
+            disabled={posting || !title.trim() || !price}
+            style={{flex:2,padding:14,background:'linear-gradient(135deg,#D946EF,#F43F5E,#FB923C)',border:'none',borderRadius:20,color:'white',fontSize:15,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:6,boxShadow:'0 4px 20px rgba(228,29,72,0.4)',fontFamily:'inherit',opacity: posting ? 0.7 : 1}}
+          >
+            {posting
+              ? <><i className="fas fa-spinner fa-spin" style={{fontSize:14}} /> Posting...</>
+              : <><i className="fas fa-paper-plane" style={{fontSize:14}} /> Post Now</>
+            }
           </button>
         </div>
       </div>

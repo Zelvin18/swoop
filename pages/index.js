@@ -94,7 +94,7 @@ export default function Home() {
 
         {/* Screens */}
         <div className={`screen screen-feed ${activeTab==='home'?'active':''}`}>
-          <FeedPage showToast={showToast} onTabChange={handleNav} />
+          <FeedPage showToast={showToast} onTabChange={handleNav} currentUser={user} />
         </div>
 
         <div className={`screen ${activeTab==='live'?'active':''}`} style={{background:'#000'}}>
@@ -150,7 +150,7 @@ export default function Home() {
 
         {/* Add Post Modal */}
         {showAddPost && (
-          <AddPostModal onClose={() => setShowAddPost(false)} showToast={showToast} />
+          <AddPostModal onClose={() => setShowAddPost(false)} showToast={showToast} currentUser={user} />
         )}
 
         {/* Toast */}
