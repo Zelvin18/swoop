@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react'
-import { createPost, CATEGORIES, CATEGORY_EMOJI } from '../lib/feed'
+import { createPost, saveDraft, uploadPostMedia, CATEGORIES, CATEGORY_EMOJI } from '../lib/feed'
 
 const CONDITIONS  = ['Brand New', 'Like New', 'Good Condition', 'Fair Condition']
 const COND_LABELS = { 'Brand New':'Never used', 'Like New':'Minimal wear', 'Good Condition':'Some signs of use', 'Fair Condition':'Noticeable wear' }
@@ -50,15 +50,43 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
     if (!canPost||!currentUser) { showToast('Add a title and price first'); return }
     setPosting(true)
     const post = await createPost({
-      sellerId:currentUser.id, title:title.trim(), description:desc.trim(),
-      price, origPrice, category:category||'Other', condition, brand,
-      location:location||'Kampala, Uganda',
-      isNegotiable:negotiable, deliveryAvailable:delivery, isHot,
-      emoji:CATEGORY_EMOJI[category]||'📦',
+      sellerId: currentUser.id,
+      title: title.trim(),
+      description: desc.trim(),
+      price, origPrice,
+      category: category || 'Other',
+      condition, brand,
+      location: location || 'Kampala, Uganda',
+      isNegotiable: negotiable,
+      deliveryAvailable: delivery,
+      isHot,
+      emoji: CATEGORY_EMOJI[category] || '📦',
+      mediaFiles,
+      status: 'active',
     })
     setPosting(false)
     if (post) { showToast('Post published!'); onClose() }
     else showToast('Failed to post. Try again.')
+  }
+
+  const handleDraft = async () => {
+    if (!title.trim() || !currentUser) { showToast('Add a title first to save draft'); return }
+    const post = await saveDraft({
+      sellerId: currentUser.id,
+      title: title.trim(),
+      description: desc.trim(),
+      price, origPrice,
+      category: category || 'Other',
+      condition, brand,
+      location: location || 'Kampala, Uganda',
+      isNegotiable: negotiable,
+      deliveryAvailable: delivery,
+      isHot,
+      emoji: CATEGORY_EMOJI[category] || '📦',
+      mediaFiles,
+    })
+    if (post) { showToast('Draft saved!'); onClose() }
+    else showToast('Failed to save draft.')
   }
 
   // ══════════════════════════════════════════════
@@ -337,7 +365,7 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
 
       {/* Footer */}
       <div style={S.footer}>
-        <button onClick={onClose} style={S.draftBtn}>
+        <button onClick={handleDraft} style={S.draftBtn}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v14a2 2 0 01-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
           Save Draft
         </button>
