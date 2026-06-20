@@ -98,7 +98,7 @@ export default function Home() {
         </div>
 
         <div className={`screen ${activeTab==='live'?'active':''}`} style={{background:'#000'}}>
-          <LivePage showToast={showToast} />
+          <LivePage showToast={showToast} user={user} />
         </div>
 
         <div className={`screen ${activeTab==='requests'?'active':''}`} style={{background:'#000'}}>

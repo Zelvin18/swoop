@@ -1,92 +1,184 @@
-import { useState } from 'react'
-import GoLiveSetupPage from './GoLiveSetupPage'
-import LiveSellingPage from './LiveSellingPage'
-import LiveSocialPage  from './LiveSocialPage'
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
+import {
+  fetchLiveStreams, fetchUpcomingStreams, fetchTopCategories,
+  countUnreadNotifications, subscribeToStream,
+  startLiveStream, insertLiveProducts, endLiveStream,
+  avatarColor, initials, fmtViewers,
+} from '../lib/live'
+import GoLiveSetupPage        from './GoLiveSetupPage'
+import LiveSellingPage         from './LiveSellingPage'
+import LiveSocialPage          from './LiveSocialPage'
+import LiveViewerPage          from './LiveViewerPage'
+import LiveSearchPanel         from './LiveSearchPanel'
+import LiveNotificationsPanel  from './LiveNotificationsPanel'
+import LiveCategoryFeed        from './LiveCategoryFeed'
 
-// No mock data — will load from Supabase
-const CATS = [
-  { label: 'Electronics', emoji: '💻' },
-  { label: 'Fashion',     emoji: '👗' },
-  { label: 'Home',        emoji: '🏠' },
-  { label: 'Phones',      emoji: '📱' },
-  { label: 'Beauty',      emoji: '💄' },
-  { label: 'Sneakers',    emoji: '👟' },
-]
-
-function fmt(n) {
-  return n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'K' : String(n)
+const CATEGORY_EMOJI = {
+  Electronics: '💻', Fashion: '👗', Home: '🏠',
+  Phones: '📱', Beauty: '💄', Sneakers: '👟',
+  Cars: '🚗', Other: '📦',
 }
+const FILTER_OPTIONS = ['All', 'Following', 'Electronics', 'Fashion', 'Home', 'Beauty']
 
-export default function LivePage({ showToast }) {
-  const [activeFilter, setActiveFilter] = useState('All')
-  const [notified, setNotified]         = useState({})
-  const [view, setView]                 = useState('list')   // 'list' | 'setup' | 'sell' | 'social'
-  const [liveConfig, setLiveConfig]     = useState(null)
-  const filters = ['All', 'Following', 'Electronics', 'Fashion', 'Home', 'Beauty']
+export default function LivePage({ showToast, user }) {
+  // ── View state ─────────────────────────────────────────────────────────────
+  const [view, setView]         = useState('list')
+  // view: 'list' | 'setup' | 'sell-host' | 'social-host' | 'viewer' | 'search' | 'notifications' | 'category'
 
-  const streams  = []
-  const upcoming = []
+  const [liveConfig,    setLiveConfig]    = useState(null)
+  const [activeStream,  setActiveStream]  = useState(null)  // stream being viewed
+  const [activeCategory,setActiveCategory]= useState(null)
+  const [liveStreamId,  setLiveStreamId]  = useState(null)  // host's current stream id
 
-  // Navigate to setup
-  if (view === 'setup') {
-    return (
-      <GoLiveSetupPage
-        onClose={() => setView('list')}
-        onStartSell={config  => { setLiveConfig(config);  setView('sell')   }}
-        onStartSocial={config => { setLiveConfig(config); setView('social') }}
-      />
-    )
+  // ── List page data ──────────────────────────────────────────────────────────
+  const [filter,         setFilter]        = useState('All')
+  const [streams,        setStreams]        = useState([])
+  const [upcoming,       setUpcoming]      = useState([])
+  const [topCats,        setTopCats]       = useState([])
+  const [unreadCount,    setUnreadCount]   = useState(0)
+  const [notified,       setNotified]      = useState({})
+  const [loading,        setLoading]       = useState(true)
+  const [loadingUpcoming,setLoadingUpcoming]= useState(true)
+
+  // ── Load main data ──────────────────────────────────────────────────────────
+  const loadStreams = useCallback(async () => {
+    setLoading(true)
+    const data = await fetchLiveStreams({ filter, currentUserId: user?.id })
+    setStreams(data)
+    setLoading(false)
+  }, [filter, user?.id])
+
+  useEffect(() => { loadStreams() }, [loadStreams])
+
+  useEffect(() => {
+    fetchUpcomingStreams(user?.id).then(d => { setUpcoming(d); setLoadingUpcoming(false) })
+    fetchTopCategories().then(setTopCats)
+    if (user?.id) countUnreadNotifications(user.id).then(setUnreadCount)
+  }, [user?.id])
+
+  // ── Realtime: new streams go live ──────────────────────────────────────────
+  useEffect(() => {
+    const channel = supabase
+      .channel('live-streams-list')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'live_streams',
+      }, () => { loadStreams() })
+      .subscribe()
+    return () => supabase.removeChannel(channel)
+  }, [loadStreams])
+
+  // ── Handle going live ──────────────────────────────────────────────────────
+  const handleStartSell = async (config) => {
+    if (!user) { showToast('Please sign in to go live'); return }
+    const stream = await startLiveStream({
+      hostId: user.id,
+      title: config.title,
+      category: config.category,
+      type: 'sell',
+      deliveryAvailable: config.delivery,
+    })
+    if (!stream) { showToast('Failed to start live. Try again.'); return }
+    if (config.products?.length) await insertLiveProducts(stream.id, config.products)
+    setLiveConfig({ ...config, streamId: stream.id })
+    setLiveStreamId(stream.id)
+    setView('sell-host')
   }
 
-  // Sell live broadcast
-  if (view === 'sell') {
-    return (
-      <LiveSellingPage
-        config={liveConfig}
-        onEnd={() => { setView('list'); showToast('✅ Live ended!') }}
-      />
-    )
+  const handleStartSocial = async (config) => {
+    if (!user) { showToast('Please sign in to go live'); return }
+    const stream = await startLiveStream({
+      hostId: user.id,
+      title: config.title,
+      category: config.category,
+      type: 'social',
+      deliveryAvailable: false,
+    })
+    if (!stream) { showToast('Failed to start live. Try again.'); return }
+    setLiveConfig({ ...config, streamId: stream.id })
+    setLiveStreamId(stream.id)
+    setView('social-host')
   }
 
-  // Social live broadcast
-  if (view === 'social') {
-    return (
-      <LiveSocialPage
-        config={liveConfig}
-        onEnd={() => { setView('list'); showToast('✅ Live ended!') }}
-      />
-    )
+  const handleEndLive = async () => {
+    if (liveStreamId) await endLiveStream(liveStreamId)
+    setView('list')
+    setLiveStreamId(null)
+    showToast('✅ Live ended!')
+    loadStreams()
   }
 
+  const handleNotifyMe = async (streamId) => {
+    if (!user) { showToast('Sign in to get notified'); return }
+    const isOn = notified[streamId]
+    setNotified(n => ({ ...n, [streamId]: !isOn }))
+    if (!isOn) {
+      await subscribeToStream(user.id, streamId)
+      showToast("🔔 You'll be notified when this stream starts!")
+    } else {
+      showToast('🔕 Notification removed')
+    }
+  }
+
+  // ── Sub-views ──────────────────────────────────────────────────────────────
+  if (view === 'setup')
+    return <GoLiveSetupPage onClose={() => setView('list')} onStartSell={handleStartSell} onStartSocial={handleStartSocial} />
+
+  if (view === 'sell-host')
+    return <LiveSellingPage config={liveConfig} onEnd={handleEndLive} />
+
+  if (view === 'social-host')
+    return <LiveSocialPage config={liveConfig} onEnd={handleEndLive} />
+
+  if (view === 'viewer' && activeStream)
+    return <LiveViewerPage stream={activeStream} currentUser={user} onClose={() => { setView('list'); loadStreams() }} />
+
+  if (view === 'search')
+    return <LiveSearchPanel onClose={() => setView('list')} onOpenStream={s => { setActiveStream(s); setView('viewer') }} />
+
+  if (view === 'notifications')
+    return <LiveNotificationsPanel userId={user?.id} onClose={() => setView('list')} onOpenStream={s => { setActiveStream(s); setView('viewer') }} />
+
+  if (view === 'category' && activeCategory)
+    return <LiveCategoryFeed category={activeCategory} currentUser={user} onClose={() => setView('list')} />
+
+  // ── Main list page ─────────────────────────────────────────────────────────
   return (
-    <div style={{ paddingBottom: 20 }}>
-      {/* Header */}
+    <div style={{ paddingBottom: 24 }}>
+      {/* ── Header ── */}
       <div className="page-header">
         <div>
           <div className="page-title">Live</div>
           <div className="page-subtitle">Shop live deals and interact with sellers</div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button className="header-btn"><i className="fas fa-search" /></button>
-          <button className="header-btn" style={{ position: 'relative' }}>
+          <button className="header-btn" onClick={() => setView('search')}>
+            <i className="fas fa-search" />
+          </button>
+          <button className="header-btn" onClick={() => { setView('notifications'); setUnreadCount(0) }} style={{ position: 'relative' }}>
             <i className="fas fa-bell" />
-            <span style={{ position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, padding: '0 4px', background: '#FF3366', borderRadius: 20, fontSize: 9, fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #000' }}>3</span>
+            {unreadCount > 0 && (
+              <span style={{ position: 'absolute', top: -3, right: -3, minWidth: 16, height: 16, padding: '0 4px', background: '#FF3366', borderRadius: 20, fontSize: 9, fontWeight: 800, color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1.5px solid #000' }}>
+                {unreadCount > 9 ? '9+' : unreadCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
 
-      {/* Go Live banner */}
+      {/* ── Go Live banner ── */}
       <div style={{
         margin: '0 16px 20px', padding: 16,
         background: 'linear-gradient(135deg,#1a0a2e,#2d0a1a)',
-        border: '1px solid rgba(168,85,247,0.3)', borderRadius: 16,
+        border: '1px solid rgba(168,85,247,0.25)', borderRadius: 16,
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
         <div style={{
           width: 44, height: 44, borderRadius: '50%',
           background: 'rgba(239,68,68,0.15)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-          boxShadow: '0 0 0 4px rgba(239,68,68,0.1)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 0 0 6px rgba(239,68,68,0.08)',
+          flexShrink: 0,
         }}>
           <i className="fas fa-circle-dot" style={{ color: '#EF4444', fontSize: 20 }} />
         </div>
@@ -100,180 +192,277 @@ export default function LivePage({ showToast }) {
             padding: '9px 16px', background: '#EF4444', border: 'none', borderRadius: 20,
             color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
+            boxShadow: '0 3px 12px rgba(239,68,68,0.4)',
           }}
         >
           <i className="fas fa-video" style={{ fontSize: 13 }} /> Start Live
         </button>
       </div>
 
-      {/* Category filter */}
+      {/* ── Filter pills ── */}
       <div className="pill-row">
-        {filters.map(f => (
-          <button key={f} className={`pill ${activeFilter === f ? 'active' : ''}`} onClick={() => setActiveFilter(f)}>{f}</button>
+        {FILTER_OPTIONS.map(f => (
+          <button
+            key={f}
+            className={`pill ${filter === f ? 'active' : ''}`}
+            onClick={() => setFilter(f)}
+          >
+            {f}
+          </button>
         ))}
       </div>
 
-      {/* Live Now header */}
+      {/* ── Live Now ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 16, fontWeight: 800 }}>
           Live Now
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444', display: 'inline-block' }} />
+          {streams.length > 0 && (
+            <>
+              <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#EF4444', display: 'inline-block', animation: 'blink 1.2s infinite' }} />
+              <span style={{ fontSize: 12, color: '#EF4444', fontWeight: 700, background: 'rgba(239,68,68,0.1)', padding: '2px 8px', borderRadius: 20 }}>
+                {streams.length} Live
+              </span>
+            </>
+          )}
         </div>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#FF3366', cursor: 'pointer' }}>See All</span>
+        {streams.length > 0 && (
+          <button onClick={() => { setActiveCategory(filter === 'All' ? 'All' : filter); setView('category') }} style={S.seeAllBtn}>
+            See All
+          </button>
+        )}
       </div>
 
-      {/* Live streams — empty until DB connected */}
-      {streams.length === 0 ? (
-        <div style={{
-          margin: '0 16px 20px', padding: '32px 16px',
-          background: '#141414', border: '1px solid rgba(255,255,255,0.06)',
-          borderRadius: 16, display: 'flex', flexDirection: 'column',
-          alignItems: 'center', gap: 10,
-        }}>
-          <div style={{ fontSize: 40 }}>📺</div>
-          <div style={{ fontSize: 14, fontWeight: 600, color: '#A1A1AA' }}>No live streams right now</div>
+      {loading ? (
+        <div style={S.loadingRow}>
+          {[1,2,3].map(i => <div key={i} style={S.skeletonCard} />)}
+        </div>
+      ) : streams.length === 0 ? (
+        <div style={S.emptyCard}>
+          <div style={{ fontSize: 40, marginBottom: 10 }}>📺</div>
+          <div style={{ fontSize: 14, fontWeight: 600, color: '#A1A1AA', marginBottom: 4 }}>
+            {filter === 'Following'
+              ? 'No live streams from people you follow'
+              : filter !== 'All'
+              ? `No ${filter} streams live right now`
+              : 'No live streams right now'}
+          </div>
           <div style={{ fontSize: 12, color: '#52525B' }}>Check back soon or start your own</div>
         </div>
       ) : (
         <div style={{ display: 'flex', gap: 10, padding: '0 16px 20px', overflowX: 'auto', scrollbarWidth: 'none' }}>
           {streams.map(s => (
-            <StreamCard key={s.id} stream={s} showToast={showToast} />
+            <StreamCard
+              key={s.id}
+              stream={s}
+              onOpen={() => { setActiveStream(s); setView('viewer') }}
+            />
           ))}
         </div>
       )}
 
-      {/* Upcoming Live header */}
+      {/* ── Upcoming Live ── */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px 12px' }}>
         <div style={{ fontSize: 16, fontWeight: 800 }}>Upcoming Live</div>
-        <span style={{ fontSize: 13, fontWeight: 600, color: '#FF3366', cursor: 'pointer' }}>See All</span>
+        <span style={S.seeAllBtn}>See All</span>
       </div>
 
-      {/* Upcoming streams — empty until DB connected */}
       <div style={{ padding: '0 16px' }}>
-        {upcoming.length === 0 ? (
-          <div style={{
-            padding: '24px 16px',
-            background: '#141414', border: '1px solid rgba(255,255,255,0.06)',
-            borderRadius: 16, display: 'flex', flexDirection: 'column',
-            alignItems: 'center', gap: 8,
-          }}>
-            <div style={{ fontSize: 36 }}>🗓️</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: '#A1A1AA' }}>No upcoming streams scheduled</div>
+        {loadingUpcoming ? (
+          <div style={{ height: 80, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <i className="fas fa-spinner fa-spin" style={{ fontSize: 18, color: '#FF3366' }} />
+          </div>
+        ) : upcoming.length === 0 ? (
+          <div style={{ ...S.emptyCard, padding: '20px 16px' }}>
+            <div style={{ fontSize: 32, marginBottom: 8 }}>🗓️</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#A1A1AA', marginBottom: 3 }}>
+              No upcoming streams from people you follow
+            </div>
+            <div style={{ fontSize: 11, color: '#52525B' }}>Follow sellers to see their scheduled lives here</div>
           </div>
         ) : (
           upcoming.map(u => (
-            <UpcomingCard key={u.id} item={u} notified={notified} setNotified={setNotified} showToast={showToast} />
+            <UpcomingCard
+              key={u.id}
+              item={u}
+              notified={notified}
+              onNotify={() => handleNotifyMe(u.id)}
+            />
           ))
         )}
       </div>
 
-      {/* Top Categories */}
-      <div style={{ padding: '16px 16px 12px', fontSize: 16, fontWeight: 800 }}>Top Categories Live</div>
-      <div style={{ display: 'flex', gap: 14, padding: '0 16px 20px', overflowX: 'auto', scrollbarWidth: 'none' }}>
-        {CATS.map(c => (
-          <div
-            key={c.label}
-            onClick={() => showToast(`📺 ${c.label} streams coming soon...`)}
-            style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0, cursor: 'pointer' }}
-          >
-            <div style={{
-              width: 64, height: 64, borderRadius: '50%', background: '#1e1e1e',
-              border: '2.5px solid #EF4444',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28,
-              position: 'relative',
-            }}>
-              {c.emoji}
-              <span style={{
-                position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)',
-                background: '#EF4444', color: 'white', fontSize: 8, fontWeight: 800,
-                padding: '1px 5px', borderRadius: 3, whiteSpace: 'nowrap', border: '1.5px solid #000',
-              }}>LIVE</span>
+      {/* ── Top Categories Live ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 16px 12px' }}>
+        <div style={{ fontSize: 16, fontWeight: 800 }}>Top Categories Live</div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 14, padding: '0 16px 24px', overflowX: 'auto', scrollbarWidth: 'none' }}>
+        {/* Always show all categories; show live count on active ones */}
+        {Object.entries(CATEGORY_EMOJI).map(([label, emoji]) => {
+          const liveCount = topCats.find(c => c.label.toLowerCase() === label.toLowerCase())?.count || 0
+          return (
+            <div
+              key={label}
+              onClick={() => { setActiveCategory(label); setView('category') }}
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, flexShrink: 0, cursor: 'pointer' }}
+            >
+              <div style={{
+                width: 64, height: 64, borderRadius: '50%',
+                background: liveCount > 0 ? '#1a0a0a' : '#1e1e1e',
+                border: `2.5px solid ${liveCount > 0 ? '#EF4444' : 'rgba(255,255,255,0.1)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 28, position: 'relative',
+                boxShadow: liveCount > 0 ? '0 0 16px rgba(239,68,68,0.25)' : 'none',
+              }}>
+                {emoji}
+                {liveCount > 0 && (
+                  <span style={{
+                    position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)',
+                    background: '#EF4444', color: 'white', fontSize: 8, fontWeight: 800,
+                    padding: '1px 6px', borderRadius: 3, whiteSpace: 'nowrap', border: '1.5px solid #000',
+                  }}>
+                    {liveCount > 9 ? '9+ LIVE' : `${liveCount} LIVE`}
+                  </span>
+                )}
+              </div>
+              <span style={{ fontSize: 11, color: liveCount > 0 ? '#fff' : '#71717A', fontWeight: liveCount > 0 ? 600 : 400 }}>
+                {label}
+              </span>
             </div>
-            <span style={{ fontSize: 11, color: '#A1A1AA' }}>{c.label}</span>
-          </div>
-        ))}
+          )
+        })}
       </div>
 
       <style>{`
-        @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(239,68,68,0.4)} 50%{box-shadow:0 0 0 8px rgba(239,68,68,0)} }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
       `}</style>
     </div>
   )
 }
 
-// Stream card — used once real data loads
-function StreamCard({ stream: s, showToast }) {
-  const seller = s.seller || {}
+// ── Stream Card ───────────────────────────────────────────────────────────────
+function StreamCard({ stream, onOpen }) {
+  const host  = stream.profiles || {}
+  const color = avatarColor(host.id || stream.host_id)
+  const init  = initials(host.full_name || host.username || 'H')
+
   return (
     <div
-      onClick={() => showToast('📺 Joining live stream...')}
+      onClick={onOpen}
       style={{
         flexShrink: 0, width: 'calc(50vw - 21px)', maxWidth: 190,
-        borderRadius: 12, overflow: 'hidden', aspectRatio: '9/13',
-        position: 'relative', background: s.bg || '#1a1a1a', cursor: 'pointer',
+        borderRadius: 14, overflow: 'hidden',
+        aspectRatio: '9/13', position: 'relative',
+        background: `linear-gradient(135deg, ${color}33, ${color}11)`,
+        cursor: 'pointer', border: '1px solid rgba(255,255,255,0.06)',
       }}
     >
-      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 60 }}>{s.emoji}</div>
-      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom,transparent 40%,rgba(0,0,0,0.85))' }} />
+      {/* Background */}
+      <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 60 }}>
+        {stream.type === 'sell' ? '🛍️' : '🎙️'}
+      </div>
+      <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom,transparent 35%,rgba(0,0,0,0.85))' }} />
+
+      {/* Top badges */}
       <div style={{ position: 'absolute', top: 8, left: 8, right: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ background: '#EF4444', color: 'white', fontSize: 10, fontWeight: 800, padding: '2px 6px', borderRadius: 4 }}>LIVE</span>
-        <span style={{ background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', color: 'white', fontSize: 11, fontWeight: 600, padding: '3px 7px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 4 }}>
-          <i className="fas fa-eye" style={{ fontSize: 10 }} />{fmt(s.viewers || 0)}
+        <span style={{ background: '#EF4444', color: 'white', fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 4 }}>LIVE</span>
+        <span style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', color: 'white', fontSize: 11, fontWeight: 600, padding: '3px 8px', borderRadius: 20, display: 'flex', alignItems: 'center', gap: 4 }}>
+          <i className="fas fa-eye" style={{ fontSize: 9 }} />{fmtViewers(stream.viewer_count || 0)}
         </span>
       </div>
+
+      {/* Bottom info */}
       <div style={{ position: 'absolute', bottom: 10, left: 10, right: 10 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'white', marginBottom: 4 }}>{s.title}</div>
-        <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', marginBottom: 6 }}>{s.sub}</div>
-        {seller.name && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <div style={{ width: 20, height: 20, borderRadius: '50%', background: seller.color || '#7C3AED', border: '1.5px solid #FF3366', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 900, color: 'white' }}>{seller.initials}</div>
-            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600 }}>{seller.name}</span>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'white', marginBottom: 5, lineHeight: 1.2, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+          {stream.title}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div style={{ width: 20, height: 20, borderRadius: '50%', background: color, border: '1.5px solid rgba(255,255,255,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 900, color: 'white', flexShrink: 0 }}>
+            {init}
           </div>
-        )}
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.8)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {host.full_name || host.username || 'Seller'}
+          </span>
+          {host.verified && <span style={{ width: 12, height: 12, borderRadius: '50%', background: '#3B82F6', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 7, color: 'white', fontWeight: 900, flexShrink: 0 }}>✓</span>}
+        </div>
       </div>
     </div>
   )
 }
 
-// Upcoming card — used once real data loads
-function UpcomingCard({ item: u, notified, setNotified, showToast }) {
-  const isOn = notified[u.id]
+// ── Upcoming Card ─────────────────────────────────────────────────────────────
+function UpcomingCard({ item: u, notified, onNotify }) {
+  const host  = u.profiles || {}
+  const color = avatarColor(host.id || u.host_id)
+  const init  = initials(host.full_name || host.username || 'H')
+  const isOn  = notified[u.id]
+
+  const scheduledLabel = u.scheduled_at
+    ? new Date(u.scheduled_at).toLocaleString('en-UG', { weekday: 'short', hour: '2-digit', minute: '2-digit' })
+    : 'Scheduled'
+
   return (
     <div style={{
       display: 'flex', alignItems: 'center', gap: 12, padding: 14,
-      background: '#141414', border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: 12, marginBottom: 10,
+      background: '#141414', border: '1px solid rgba(255,255,255,0.07)',
+      borderRadius: 14, marginBottom: 10,
     }}>
-      <div style={{
-        width: 46, height: 46, borderRadius: '50%', background: '#1e1e1e',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 20, flexShrink: 0,
-      }}>{u.emoji}</div>
+      <div style={{ width: 46, height: 46, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900, color: 'white', flexShrink: 0, boxShadow: `0 0 0 3px ${color}33` }}>
+        {init}
+      </div>
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2 }}>{u.title}</div>
-        <div style={{ fontSize: 12, color: '#A1A1AA', marginBottom: 4 }}>{u.sub}</div>
-        <div style={{ fontSize: 11, color: '#71717A', display: 'flex', alignItems: 'center', gap: 4 }}>
-          <i className="fas fa-calendar" style={{ fontSize: 11 }} />{u.scheduled_at}
+        <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          {u.title}
+        </div>
+        <div style={{ fontSize: 11, color: '#A1A1AA', marginBottom: 3 }}>
+          {host.full_name || host.username}
+          {host.verified && <span style={{ marginLeft: 4, fontSize: 9, background: '#3B82F6', color: 'white', padding: '0 4px', borderRadius: 3, fontWeight: 700 }}>✓</span>}
+        </div>
+        <div style={{ fontSize: 11, color: '#F59E0B', display: 'flex', alignItems: 'center', gap: 4 }}>
+          <i className="fas fa-calendar" style={{ fontSize: 10 }} />
+          {scheduledLabel}
         </div>
       </div>
       <button
-        onClick={() => {
-          setNotified(n => ({ ...n, [u.id]: !n[u.id] }))
-          showToast(isOn ? '🔕 Notification removed' : "🔔 You'll be notified!")
-        }}
+        onClick={onNotify}
         style={{
-          padding: '7px 12px', borderRadius: 20,
-          border: `1.5px solid ${isOn ? '#7C3AED' : 'rgba(255,255,255,0.15)'}`,
+          padding: '7px 12px', borderRadius: 20, flexShrink: 0,
+          border: `1.5px solid ${isOn ? '#7C3AED' : 'rgba(255,255,255,0.12)'}`,
           background: isOn ? 'rgba(124,58,237,0.15)' : '#1e1e1e',
           color: isOn ? '#A855F7' : '#A1A1AA',
           fontSize: 12, fontWeight: 600, cursor: 'pointer',
           display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap',
         }}
       >
-        <i className="fas fa-bell" style={{ fontSize: 12 }} />
+        <i className="fas fa-bell" style={{ fontSize: 11 }} />
         {isOn ? 'Notifying' : 'Notify Me'}
       </button>
     </div>
   )
+}
+
+// ── Shared button style ───────────────────────────────────────────────────────
+const S = {
+  seeAllBtn: {
+    fontSize: 13, fontWeight: 600, color: '#FF3366',
+    cursor: 'pointer', background: 'none', border: 'none',
+    fontFamily: 'inherit',
+  },
+  emptyCard: {
+    margin: '0 0 20px', padding: '32px 16px',
+    background: '#141414', border: '1px solid rgba(255,255,255,0.05)',
+    borderRadius: 16, display: 'flex', flexDirection: 'column',
+    alignItems: 'center', textAlign: 'center', gap: 4,
+  },
+  loadingRow: {
+    display: 'flex', gap: 10, padding: '0 16px 20px',
+    overflowX: 'hidden',
+  },
+  skeletonCard: {
+    flexShrink: 0, width: 'calc(50vw - 21px)', maxWidth: 190,
+    borderRadius: 14, aspectRatio: '9/13',
+    background: 'linear-gradient(135deg,#1a1a1a,#0d0d0d)',
+    border: '1px solid rgba(255,255,255,0.04)',
+    animation: 'pulse 1.5s ease-in-out infinite',
+  },
 }
