@@ -106,7 +106,7 @@ export default function Home() {
         </div>
 
         <div className={`screen ${activeTab==='inbox'?'active':''}`} style={{background:'#000'}}>
-          <InboxPage showToast={showToast} />
+          <InboxPage showToast={showToast} currentUser={user} />
         </div>
 
         <div className={`screen ${activeTab==='profile'?'active':''}`} style={{background:'#000'}}>

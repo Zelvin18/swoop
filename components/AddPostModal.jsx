@@ -395,7 +395,7 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
           style={{...S.postBtn,opacity:posting||!canPost?0.45:1}}>
           {posting
             ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" style={{animation:'spin 1s linear infinite'}}><circle cx="12" cy="12" r="10"/></svg> Publishing...</>
-            : <>Publish Listing <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></>
+            : <>Post <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></>
           }
         </button>
       </div>
