@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
-import { createPost, saveDraft, uploadPostMedia, CATEGORIES, CATEGORY_EMOJI } from '../lib/feed'
+import { createPost, saveDraft, CATEGORIES, CATEGORY_EMOJI } from '../lib/feed'
+import MediaEditor from './MediaEditor'
 
 const CONDITIONS  = ['Brand New', 'Like New', 'Good Condition', 'Fair Condition']
 const COND_LABELS = { 'Brand New':'Never used', 'Like New':'Minimal wear', 'Good Condition':'Some signs of use', 'Fair Condition':'Noticeable wear' }
@@ -13,9 +14,10 @@ function Toggle({ on, onToggle, color='#FF3366' }) {
 }
 
 export default function AddPostModal({ onClose, showToast, currentUser }) {
-  const [step,       setStep]       = useState('media')
+  const [step,       setStep]       = useState('media')  // 'media' | 'editing' | 'details'
   const [mediaFiles, setMediaFiles] = useState([])
   const [mediaType,  setMediaType]  = useState(null)
+  const [editorResult, setEditorResult] = useState(null)  // from MediaEditor
   const [title,      setTitle]      = useState('')
   const [price,      setPrice]      = useState('')
   const [origPrice,  setOrigPrice]  = useState('')
@@ -37,12 +39,14 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
     const files = Array.from(e.target.files||[]).slice(0,10)
     if (!files.length) return
     setMediaFiles(files.map(f=>({url:URL.createObjectURL(f),file:f,type:'photo'})))
-    setMediaType('photos'); setStep('details')
+    setMediaType('photos')
+    setStep('editing')   // go to editor first
   }
   const handleVideoRecord = (e) => {
     const file = e.target.files?.[0]; if (!file) return
     setMediaFiles([{url:URL.createObjectURL(file),file,type:'video'}])
-    setMediaType('video'); setStep('details')
+    setMediaType('video')
+    setStep('editing')   // go to editor first
   }
   const removeMedia = (idx) => setMediaFiles(p=>p.filter((_,i)=>i!==idx))
 
@@ -62,6 +66,9 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
       isHot,
       emoji: CATEGORY_EMOJI[category] || '📦',
       mediaFiles,
+      filterName:      editorResult?.filter      || 'Original',
+      musicTrackId:    editorResult?.selectedTrack?.id || null,
+      musicStartSec:   editorResult?.musicStart  || 0,
       status: 'active',
     })
     setPosting(false)
@@ -90,8 +97,23 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
   }
 
   // ══════════════════════════════════════════════
+  // STEP 1.5 — MEDIA EDITOR
+  // ══════════════════════════════════════════════
+  if (step === 'editing') return (
+    <MediaEditor
+      mediaFiles={mediaFiles}
+      onBack={() => setStep('media')}
+      onDone={(result) => {
+        setEditorResult(result)
+        // Apply edited files back (in case cropped/trimmed)
+        if (result.mediaFiles) setMediaFiles(result.mediaFiles)
+        setStep('details')
+      }}
+    />
+  )
+
+  // ══════════════════════════════════════════════
   // STEP 1 — MEDIA SELECTION
-  // Clean, minimal, premium — no emoji stickers
   // ══════════════════════════════════════════════
   if (step === 'media') return (
     <div style={S.page}>
