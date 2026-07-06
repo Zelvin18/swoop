@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { formatUGX, discountPct, fmtCount, fmtDistance, likePost, unlikePost, savePost, unsavePost, sharePost, recordView } from '../lib/feed'
+import ReservationPage from './ReservationPage'
+import ChatScreen      from './ChatScreen'
 
 // ── Deterministic avatar colour ───────────────────────────────────────────────
 function avatarColor(id=''){const C=['#7C3AED','#FF3366','#F97316','#22C55E','#3B82F6','#EC4899','#F59E0B','#06B6D4'];return C[id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%C.length]}
@@ -81,7 +83,7 @@ function ActionBtn({ icon, active, activeColor='#FF3366', count, onClick }) {
 }
 
 // ── Service post card ─────────────────────────────────────────────────────────
-function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike, onSave, onShare, onComment, onDoubleTap, showToast }) {
+function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike, onSave, onShare, onComment, onDoubleTap, showToast, onChatSeller }) {
   const hasImage = p.images?.[0]
   return (
     <div className="feed-card" onDoubleClick={onDoubleTap} style={{height:'auto',minHeight:'100dvh',display:'flex',flexDirection:'column',background:'#000'}}>
@@ -138,7 +140,7 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
             <div style={{fontSize:15,fontWeight:700,color:'#F97316'}}>Contact for pricing</div>
           )}
         </div>
-        <button onClick={()=>showToast('💼 Requesting service...')} style={{padding:'11px 20px',background:'linear-gradient(135deg,#F97316,#EF4444)',border:'none',borderRadius:12,color:'white',fontSize:14,fontWeight:700,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 3px 14px rgba(249,115,22,0.4)',whiteSpace:'nowrap'}}>
+        <button onClick={()=>onChatSeller&&onChatSeller()} style={{padding:'11px 20px',background:'linear-gradient(135deg,#F97316,#EF4444)',border:'none',borderRadius:12,color:'white',fontSize:14,fontWeight:700,cursor:'pointer',fontFamily:'inherit',boxShadow:'0 3px 14px rgba(249,115,22,0.4)',whiteSpace:'nowrap'}}>
           Request Service
         </button>
       </div>
@@ -156,13 +158,16 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
 
 // ── Main FeedCard — routes by post_type ───────────────────────────────────────
 export default function FeedCard({ post: p, currentUser, initialLiked=false, initialSaved=false, distanceKm=null, onOpenComments, onChatSeller }) {
-  const [liked,    setLiked]    = useState(initialLiked)
-  const [saved,    setSaved]    = useState(initialSaved)
-  const [likes,    setLikes]    = useState(p.likes_count||0)
-  const [saves,    setSaves]    = useState(p.saves_count||0)
-  const [paused,   setPaused]   = useState(false)
-  const [following,setFollowing]= useState(false)
-  const [showHeart,setShowHeart]= useState(false)
+  const [liked,       setLiked]       = useState(initialLiked)
+  const [saved,       setSaved]       = useState(initialSaved)
+  const [likes,       setLikes]       = useState(p.likes_count||0)
+  const [saves,       setSaves]       = useState(p.saves_count||0)
+  const [paused,      setPaused]      = useState(false)
+  const [following,   setFollowing]   = useState(false)
+  const [showHeart,   setShowHeart]   = useState(false)
+  const [showReserve, setShowReserve] = useState(false)
+  const [showChat,    setShowChat]    = useState(false)
+  const [conversation,setConversation]= useState(null)
   const heartTimer = useRef(null)
 
   const seller      = p.seller || {}
@@ -199,6 +204,35 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
     heartTimer.current = setTimeout(()=>setShowHeart(false), 900)
   }
 
+  const handleBuyNow = async () => {
+    if (!currentUser) { return }
+    setShowReserve(true)
+  }
+
+  const handleChatSeller = async () => {
+    if (!currentUser) { return }
+    // Create or find conversation
+    const { data: existing } = await import('../lib/supabase').then(m =>
+      m.supabase.from('conversations')
+        .select('*,post:posts(id,title,price,images,emoji,bg_color,condition),buyer_profile:profiles!buyer_id(id,full_name,username,avatar_url,verified),seller_profile:profiles!seller_id(id,full_name,username,avatar_url,verified)')
+        .eq('post_id', p.id).eq('buyer_id', currentUser.id).eq('seller_id', p.seller_id).maybeSingle()
+    )
+    if (existing) { setConversation(existing); setShowChat(true); return }
+
+    const { data: newConvo } = await import('../lib/supabase').then(m =>
+      m.supabase.from('conversations').insert({
+        post_id: p.id, buyer_id: currentUser.id, seller_id: p.seller_id,
+        last_message: `Hi, I\'m interested in ${p.title}`, last_at: new Date().toISOString(),
+        context_type: 'product', context_id: p.id,
+      }).select('*,post:posts(id,title,price,images,emoji,bg_color,condition),buyer_profile:profiles!buyer_id(id,full_name,username,avatar_url,verified),seller_profile:profiles!seller_id(id,full_name,username,avatar_url,verified)').single()
+    )
+    if (newConvo) {
+      const { supabase } = await import('../lib/supabase')
+      await supabase.from('messages').insert({ conversation_id: newConvo.id, sender_id: currentUser.id, content: `Hi, I'm interested in ${p.title}. Is it still available?`, message_type:'text' })
+      setConversation(newConvo); setShowChat(true)
+    }
+  }
+
   const commonProps = { p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike:handleLike, onSave:handleSave, onShare:handleShare, onComment:()=>onOpenComments&&onOpenComments(p), onDoubleTap:handleDoubleTap }
 
   // ── Social post ────────────────────────────────────────────────────────
@@ -206,14 +240,16 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
     <div style={{position:'relative'}}>
       <SocialCard {...commonProps}/>
       {showHeart && <HeartFlash/>}
+      {showChat && conversation && <ChatScreen conversation={conversation} currentUser={currentUser} onBack={()=>setShowChat(false)}/>}
     </div>
   )
 
   // ── Service post ───────────────────────────────────────────────────────
   if (p.post_type === 'service') return (
     <div style={{position:'relative'}}>
-      <ServiceCard {...commonProps} showToast={()=>{}}/>
+      <ServiceCard {...commonProps} onChatSeller={handleChatSeller}/>
       {showHeart && <HeartFlash/>}
+      {showChat && conversation && <ChatScreen conversation={conversation} currentUser={currentUser} onBack={()=>setShowChat(false)}/>}
     </div>
   )
 
@@ -289,16 +325,27 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
           </div>
         )}
         <div className="feed-cta-row">
-          <button className="feed-btn-buy" onClick={()=>{}}>
+          <button className="feed-btn-buy" onClick={handleBuyNow}>
             <i className="fas fa-bag-shopping" style={{fontSize:11}}/> Buy Now
           </button>
-          <button className="feed-btn-chat" onClick={()=>onChatSeller&&onChatSeller(p,seller)}>
+          <button className="feed-btn-chat" onClick={handleChatSeller}>
             <i className="fas fa-comment" style={{fontSize:11}}/> Chat with Seller
           </button>
         </div>
       </div>
 
       {showHeart&&<HeartFlash/>}
+
+      {showReserve && (
+        <ReservationPage post={p} seller={seller} currentUser={currentUser}
+          onBack={()=>setShowReserve(false)}
+          onConfirmed={()=>{ setShowReserve(false); handleChatSeller() }}
+        />
+      )}
+
+      {showChat && conversation && (
+        <ChatScreen conversation={conversation} currentUser={currentUser} onBack={()=>setShowChat(false)}/>
+      )}
     </div>
   )
 }
