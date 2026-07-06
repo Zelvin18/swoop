@@ -169,8 +169,8 @@ export default function LivePage({ showToast, user }) {
       {/* ── Go Live banner ── */}
       <div style={{
         margin: '0 16px 20px', padding: 16,
-        background: 'linear-gradient(135deg,#1a0a2e,#2d0a1a)',
-        border: '1px solid rgba(168,85,247,0.25)', borderRadius: 16,
+        background: '#141414',
+        border: '1px solid rgba(255,255,255,0.07)', borderRadius: 16,
         display: 'flex', alignItems: 'center', gap: 12,
       }}>
         <div style={{
@@ -189,10 +189,10 @@ export default function LivePage({ showToast, user }) {
         <button
           onClick={() => setView('setup')}
           style={{
-            padding: '9px 16px', background: '#EF4444', border: 'none', borderRadius: 20,
+            padding: '9px 16px', background: 'linear-gradient(135deg,#FF3366,#FF6633)', border: 'none', borderRadius: 20,
             color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap',
-            boxShadow: '0 3px 12px rgba(239,68,68,0.4)',
+            boxShadow: '0 3px 12px rgba(255,51,102,0.4)',
           }}
         >
           <i className="fas fa-video" style={{ fontSize: 13 }} /> Start Live

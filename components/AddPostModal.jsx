@@ -151,8 +151,8 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
             badgeColor:'#7C3AED',
             desc:'Share videos, stories, tips, reviews or just your moments.',
             chips:['Tell a story','Inspire','Connect'],
-            gradient:'linear-gradient(135deg,#1a003a,#2d0060)',
-            borderColor:'rgba(124,58,237,0.4)',
+            gradient:'#141414',
+            borderColor:'rgba(255,255,255,0.08)',
             icon:(
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
             ),
@@ -165,8 +165,8 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
             badgeColor:'#FF3366',
             desc:'List a product for sale with price, stock and delivery options.',
             chips:['Add Price','Set Stock','Get Buyers'],
-            gradient:'linear-gradient(135deg,#2d0010,#1a0020)',
-            borderColor:'rgba(255,51,102,0.4)',
+            gradient:'#141414',
+            borderColor:'rgba(255,255,255,0.08)',
             icon:(
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
             ),
@@ -179,8 +179,8 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
             badgeColor:'#F97316',
             desc:'Promote your skills or business and get more clients.',
             chips:['Any Service','Find Clients','Grow Business'],
-            gradient:'linear-gradient(135deg,#1a0800,#2d1400)',
-            borderColor:'rgba(249,115,22,0.4)',
+            gradient:'#141414',
+            borderColor:'rgba(255,255,255,0.08)',
             icon:(
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
             ),
@@ -196,8 +196,6 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
             transition:'transform 0.15s, box-shadow 0.15s',
             position:'relative', overflow:'hidden',
           }}>
-            {/* Glow */}
-            <div style={{position:'absolute',top:-30,right:-30,width:120,height:120,borderRadius:'50%',background:`${card.badgeColor}18`,pointerEvents:'none'}}/>
             {/* Icon */}
             <div style={{width:52,height:52,borderRadius:14,background:card.iconBg,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,boxShadow:`0 4px 16px ${card.badgeColor}40`}}>
               {card.icon}
@@ -205,7 +203,7 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
             <div style={{flex:1,minWidth:0}}>
               <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:5}}>
                 <span style={{fontSize:16,fontWeight:800,color:'white'}}>{card.label}</span>
-                <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20,background:`${card.badgeColor}22`,color:card.badgeColor,border:`1px solid ${card.badgeColor}44`}}>{card.badge}</span>
+                <span style={{fontSize:10,fontWeight:700,padding:'2px 8px',borderRadius:20,background:'rgba(255,255,255,0.07)',color:'rgba(255,255,255,0.5)',border:'1px solid rgba(255,255,255,0.1)'}}>{card.badge}</span>
               </div>
               <div style={{fontSize:12,color:'rgba(255,255,255,0.5)',lineHeight:1.5,marginBottom:8}}>{card.desc}</div>
               <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>

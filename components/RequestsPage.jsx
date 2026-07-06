@@ -149,7 +149,7 @@ export default function RequestsPage({ showToast, currentUser }) {
 
       {/* ── Post Request banner ── */}
       {!showSearch && (
-        <div style={{margin:'12px 16px',padding:'14px 16px',background:'linear-gradient(135deg,#1a0030,#2d0010)',border:'1px solid rgba(255,51,102,0.2)',borderRadius:16,display:'flex',alignItems:'center',gap:12}}>
+        <div style={{margin:'12px 16px',padding:'14px 16px',background:'#141414',border:'1px solid rgba(255,255,255,0.07)',borderRadius:16,display:'flex',alignItems:'center',gap:12}}>
           <div style={{width:42,height:42,borderRadius:'50%',background:'rgba(255,51,102,0.15)',border:'2px dashed #FF3366',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
             <i className="fas fa-plus" style={{color:'#FF3366',fontSize:16}} />
           </div>
@@ -158,7 +158,7 @@ export default function RequestsPage({ showToast, currentUser }) {
             <div style={{fontSize:12,color:'#A1A1AA'}}>Post a request and get offers from sellers near you</div>
           </div>
           <button onClick={()=>setShowPostModal(true)}
-            style={{padding:'9px 16px',background:'#FF3366',border:'none',borderRadius:20,color:'white',fontSize:13,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',boxShadow:'0 2px 14px rgba(255,51,102,0.4)',fontFamily:'inherit'}}>
+            style={{padding:'9px 16px',background:'linear-gradient(135deg,#FF3366,#FF6633)',border:'none',borderRadius:20,color:'white',fontSize:13,fontWeight:700,cursor:'pointer',whiteSpace:'nowrap',boxShadow:'0 2px 14px rgba(255,51,102,0.4)',fontFamily:'inherit'}}>
             Post Request
           </button>
         </div>
