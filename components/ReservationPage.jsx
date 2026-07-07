@@ -288,8 +288,8 @@ function PMOption({ value, selected, onSelect, label, sub, color, icon }) {
   )
 }
 const S = {
-  page:    { position:'fixed', inset:0, zIndex:500, background:'#000', display:'flex', flexDirection:'column', fontFamily:"'Inter',sans-serif", color:'#fff' },
-  header:  { display:'flex', alignItems:'center', gap:12, padding:'12px 16px', paddingTop:'calc(env(safe-area-inset-top,0px) + 12px)', borderBottom:'1px solid rgba(255,255,255,0.07)', background:'rgba(0,0,0,0.95)', backdropFilter:'blur(16px)', flexShrink:0 },
+  page:    { position:'fixed', inset:0, zIndex:9999, background:'#000', display:'flex', flexDirection:'column', fontFamily:"'Inter',sans-serif", color:'#fff' },
+  header:  { display:'flex', alignItems:'center', gap:12, padding:'12px 16px', paddingTop:'calc(env(safe-area-inset-top,0px) + 12px)', borderBottom:'1px solid rgba(255,255,255,0.07)', background:'rgba(0,0,0,0.95)', backdropFilter:'blur(16px)', flexShrink:0, position:'sticky', top:0, zIndex:10 },
   backBtn: { width:36, height:36, borderRadius:'50%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 },
   body:    { flex:1, overflowY:'auto', scrollbarWidth:'none', paddingTop:8 },
 }

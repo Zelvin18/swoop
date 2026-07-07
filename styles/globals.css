@@ -50,6 +50,13 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* Auth pages need scrolling */
+body.auth-page {
+  overflow-y: auto;
+  height: auto;
+  min-height: 100dvh;
+}
+
 /* ── APP SHELL ── */
 .app-shell {
   position: fixed; inset: 0;

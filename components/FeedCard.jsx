@@ -254,15 +254,29 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   )
 
   // ── Product post (TikTok full-screen) ──────────────────────────────────
+  const videoRef = useRef(null)
+
+  // Control video play/pause
+  useEffect(() => {
+    const v = videoRef.current
+    if (!v) return
+    if (paused) v.pause()
+    else v.play().catch(()=>{})
+  }, [paused])
+
   return (
     <div className={`feed-card${paused?' paused':''}`} onDoubleClick={handleDoubleTap}>
       {/* Background — video takes priority, then image, then color/emoji */}
       {p.video_url ? (
         <video
+          ref={videoRef}
           src={p.video_url}
           className="feed-media-bg"
           style={{objectFit:'cover', width:'100%', height:'100%'}}
-          autoPlay muted loop playsInline
+          autoPlay
+          muted={false}
+          loop
+          playsInline
           onClick={()=>setPaused(x=>!x)}
         />
       ) : (

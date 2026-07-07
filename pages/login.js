@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
@@ -18,6 +18,12 @@ export default function LoginPage() {
   const [showPw,     setShowPw]     = useState(false)
   const [loading,    setLoading]    = useState(false)
   const [error,      setError]      = useState('')
+
+  // Allow page to scroll — override globals.css overflow:hidden
+  useEffect(() => {
+    document.body.classList.add('auth-page')
+    return () => document.body.classList.remove('auth-page')
+  }, [])
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -164,7 +170,7 @@ const S = {
     color: '#fff',
     overflowY: 'auto',
     overflowX: 'hidden',
-    paddingBottom: 32,
+    paddingBottom: 40,
   },
 
   /* Logo */
