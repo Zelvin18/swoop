@@ -23,13 +23,14 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const isEmail = identifier.includes('@')
-    const email   = isEmail
-      ? identifier.trim().toLowerCase()
-      : `${identifier.replace(/\D/g,'').replace(/^0/,'256')}@swoop.ug`
+    // Always try as email first, then as phone fallback
+    const trimmed = identifier.trim().toLowerCase()
+    const isEmail = trimmed.includes('@')
+    const email   = isEmail ? trimmed : `${trimmed.replace(/\D/g,'')}@swoop.ug`
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
     if (authError) {
-      setError('Invalid email/phone or password.')
+      // Also try the original value as email in case user typed email without @
+      setError('Incorrect email/phone or password. Please try again.')
       setLoading(false)
       return
     }
@@ -52,7 +53,7 @@ export default function LoginPage() {
 
         {/* ── WELCOME TEXT ── */}
         <div style={S.welcomeSection}>
-          <div style={S.welcomeTitle}>Welcome back 👋</div>
+          <div style={S.welcomeTitle}>Welcome back</div>
           <div style={S.welcomeSub}>Login to continue to your account</div>
         </div>
 
@@ -163,6 +164,7 @@ const S = {
     color: '#fff',
     overflowY: 'auto',
     overflowX: 'hidden',
+    paddingBottom: 32,
   },
 
   /* Logo */
@@ -184,6 +186,7 @@ const S = {
     padding: '20px 28px 4px',
     width: '100%',
     maxWidth: 430,
+    textAlign: 'center',
   },
   welcomeTitle: {
     fontSize: 26,
@@ -316,15 +319,14 @@ const S = {
 
   /* Bag */
   bagSection: {
-    marginTop: 'auto',
     width: '100%',
+    maxWidth: 430,
     display: 'flex',
     justifyContent: 'center',
-    paddingBottom: 'calc(env(safe-area-inset-bottom, 0px))',
+    paddingTop: 16,
   },
   bagImg: {
-    width: '100%',
-    maxWidth: 360,
+    width: '90%',
     height: 'auto',
     objectFit: 'contain',
     display: 'block',

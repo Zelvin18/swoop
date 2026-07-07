@@ -40,7 +40,7 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
       {(hasImages || isVideo) && (
         <div style={{width:'100%',aspectRatio:'1',background:'#0a0a0a',position:'relative',overflow:'hidden',flexShrink:0}}>
           {isVideo
-            ? <video src={p.video_url} style={{width:'100%',height:'100%',objectFit:'cover'}} muted loop autoPlay playsInline/>
+            ? <video src={p.video_url} style={{width:'100%',height:'100%',objectFit:'cover'}} autoPlay muted loop playsInline controls={false}/>
             : <img src={p.images[imgIdx]} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
           }
           {/* Multi-image counter */}
@@ -256,10 +256,24 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   // ── Product post (TikTok full-screen) ──────────────────────────────────
   return (
     <div className={`feed-card${paused?' paused':''}`} onDoubleClick={handleDoubleTap}>
-      {/* Background */}
-      <div className="feed-media-bg" style={{background:p.bg_color||'#0d0d0d',backgroundImage:p.images?.[0]?`url(${p.images[0]})`:'none',backgroundSize:'cover',backgroundPosition:'center'}} onClick={()=>setPaused(x=>!x)}>
-        {!p.images?.[0]&&p.emoji&&<div className="feed-media-emoji">{p.emoji}</div>}
-      </div>
+      {/* Background — video takes priority, then image, then color/emoji */}
+      {p.video_url ? (
+        <video
+          src={p.video_url}
+          className="feed-media-bg"
+          style={{objectFit:'cover', width:'100%', height:'100%'}}
+          autoPlay muted loop playsInline
+          onClick={()=>setPaused(x=>!x)}
+        />
+      ) : (
+        <div className="feed-media-bg" style={{
+          background: p.images?.[0] ? '#000' : (p.bg_color||'#0d0d0d'),
+          backgroundImage: p.images?.[0] ? `url(${p.images[0]})` : 'none',
+          backgroundSize:'cover', backgroundPosition:'center'
+        }} onClick={()=>setPaused(x=>!x)}>
+          {!p.images?.[0] && p.emoji && <div className="feed-media-emoji">{p.emoji}</div>}
+        </div>
+      )}
       <div className="feed-overlay"/>
       <div className="feed-play"><i className="fas fa-play"/></div>
 

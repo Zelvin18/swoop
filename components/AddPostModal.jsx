@@ -75,7 +75,8 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
   const handlePhotoPick = (e) => {
     const files = Array.from(e.target.files||[]).slice(0,10)
     if (!files.length) return
-    setMediaFiles(files.map(f=>({url:URL.createObjectURL(f),file:f,type:'photo'})))
+    // Detect photo vs video by mime type
+    setMediaFiles(files.map(f=>({url:URL.createObjectURL(f),file:f,type:f.type.startsWith('video')?'video':'photo'})))
     setStep('editing')
   }
   const handleVideoRecord = (e) => {
@@ -89,12 +90,48 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
     if (!currentUser) { showToast('Sign in to post'); return }
     setPosting(true)
     let post = null
-    if (postType === 'social') {
-      post = await createPost({ sellerId:currentUser.id, postType:'social', caption:caption.trim(), title:caption.trim().slice(0,60)||'Social post', mediaFiles, filterName:editorResult?.filter||'Original', musicTrackId:editorResult?.selectedTrack?.id||null })
-    } else if (postType === 'product') {
-      post = await createPost({ sellerId:currentUser.id, postType:'product', title:title.trim(), description:desc.trim(), price, origPrice, category:category||'Other', condition, brand, location:location||'Kampala, Uganda', isNegotiable:negotiable, deliveryAvailable:delivery, isHot, emoji:CATEGORY_EMOJI[category]||'📦', mediaFiles, filterName:editorResult?.filter||'Original', musicTrackId:editorResult?.selectedTrack?.id||null })
-    } else if (postType === 'service') {
-      post = await createPost({ sellerId:currentUser.id, postType:'service', title:serviceTitle.trim(), description:serviceDesc.trim(), serviceCategory:serviceCat||'Other', serviceRate, serviceRateType, serviceFeatures:serviceFeatures.filter(f=>f.trim()), serviceDuration, emoji:'🛠️', mediaFiles, filterName:editorResult?.filter||'Original' })
+    try {
+      if (postType === 'social') {
+        post = await createPost({
+          sellerId: currentUser.id, postType: 'social',
+          caption: caption.trim(),
+          title: caption.trim().slice(0,60) || 'Social post',
+          mediaFiles,
+          filterName: editorResult?.filter || 'Original',
+          musicTrackId: editorResult?.selectedTrack?.id || null,
+        })
+      } else if (postType === 'product') {
+        post = await createPost({
+          sellerId: currentUser.id, postType: 'product',
+          title: title.trim(), description: desc.trim(),
+          price, origPrice,
+          category: category || 'Other',
+          condition, brand,
+          location: location || 'Kampala, Uganda',
+          isNegotiable: negotiable,
+          deliveryAvailable: delivery,
+          isHot,
+          emoji: CATEGORY_EMOJI[category] || '📦',
+          mediaFiles,
+          filterName: editorResult?.filter || 'Original',
+          musicTrackId: editorResult?.selectedTrack?.id || null,
+        })
+      } else if (postType === 'service') {
+        post = await createPost({
+          sellerId: currentUser.id, postType: 'service',
+          title: serviceTitle.trim(),
+          description: serviceDesc.trim(),
+          serviceCategory: serviceCat || 'Other',
+          serviceRate, serviceRateType,
+          serviceFeatures: serviceFeatures.filter(f=>f.trim()),
+          serviceDuration,
+          emoji: '🛠️',
+          mediaFiles,
+          filterName: editorResult?.filter || 'Original',
+        })
+      }
+    } catch (err) {
+      console.error('Post error:', err)
     }
     setPosting(false)
     if (post) { showToast('Post published!'); onClose() }
@@ -294,7 +331,7 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
           </label>
           <div style={S.divider}/>
           <label style={S.mediaRow}>
-            <input ref={photoRef} type="file" accept="image/*" multiple onChange={handlePhotoPick} style={{display:'none'}}/>
+            <input ref={photoRef} type="file" accept="image/*,video/*" multiple onChange={handlePhotoPick} style={{display:'none'}}/>
             <div style={{...S.mediaRowIcon, background:`${cfg.accent}14`, border:`1px solid ${cfg.accent}30`}}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={cfg.accent} strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
             </div>
