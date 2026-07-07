@@ -79,7 +79,6 @@ export default function SignupPage() {
       email: email.trim().toLowerCase(),
       password,
       options: {
-        emailRedirectTo: undefined,  // no email confirmation needed
         data: { full_name: fullName, phone }
       },
     })
@@ -100,9 +99,29 @@ export default function SignupPage() {
       try { await supabase.from('user_settings').upsert({ id: data.user.id }) } catch(_){}
     }
 
-    setLoading(false)
-    // Go to profile setup, not home — first time users must set username + photo
-    router.push('/setup-profile')
+    // If user is confirmed immediately (email confirmation disabled in Supabase),
+    // sign them in and proceed. Otherwise show a helpful message.
+    if (data.session) {
+      // Already signed in — go to profile setup
+      setLoading(false)
+      router.push('/setup-profile')
+    } else if (data.user && !data.session) {
+      // Email confirmation required — sign in directly so they can proceed
+      const { error: signInErr } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      })
+      setLoading(false)
+      if (signInErr) {
+        // Email confirmation required by Supabase settings
+        setError('Account created! Please check your email to confirm your account, then log in.')
+        return
+      }
+      router.push('/setup-profile')
+    } else {
+      setLoading(false)
+      router.push('/setup-profile')
+    }
   }
 
   return (

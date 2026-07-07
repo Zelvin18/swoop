@@ -51,8 +51,11 @@ html, body {
 }
 
 /* Auth pages need scrolling */
-body.auth-page {
-  overflow-y: auto;
+body.auth-page,
+html.auth-page,
+html.auth-page body {
+  overflow-y: auto !important;
+  overflow-x: hidden;
   height: auto;
   min-height: 100dvh;
 }

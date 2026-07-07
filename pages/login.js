@@ -21,25 +21,39 @@ export default function LoginPage() {
 
   // Allow page to scroll — override globals.css overflow:hidden
   useEffect(() => {
+    document.documentElement.classList.add('auth-page')
     document.body.classList.add('auth-page')
-    return () => document.body.classList.remove('auth-page')
+    return () => {
+      document.documentElement.classList.remove('auth-page')
+      document.body.classList.remove('auth-page')
+    }
   }, [])
 
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-    // Always try as email first, then as phone fallback
+
     const trimmed = identifier.trim().toLowerCase()
     const isEmail = trimmed.includes('@')
-    const email   = isEmail ? trimmed : `${trimmed.replace(/\D/g,'')}@swoop.ug`
+
+    // Try sign in — first attempt with the value as-is (or formatted email)
+    const email = isEmail ? trimmed : `${trimmed.replace(/\D/g,'')}@swoop.ug`
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
+
     if (authError) {
-      // Also try the original value as email in case user typed email without @
-      setError('Incorrect email/phone or password. Please try again.')
+      // If it looks like an email but failed, it might be email confirmation pending
+      if (authError.message?.toLowerCase().includes('email not confirmed')) {
+        setError('Please check your email inbox and confirm your account before logging in.')
+      } else if (authError.message?.toLowerCase().includes('invalid login credentials')) {
+        setError('Incorrect email or password. Make sure you signed up with this email.')
+      } else {
+        setError(authError.message || 'Login failed. Please try again.')
+      }
       setLoading(false)
       return
     }
+
     router.push('/')
   }
 

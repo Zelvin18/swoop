@@ -11,6 +11,17 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
   const isVideo = !!p.video_url
   const hasImages = p.images?.length > 0
   const [imgIdx, setImgIdx] = useState(0)
+  const [videoPaused, setVideoPaused] = useState(false)
+  const [videoMuted, setVideoMuted]   = useState(false)
+  const socialVideoRef = useRef(null)
+
+  // Control play/pause for social video
+  useEffect(() => {
+    const v = socialVideoRef.current
+    if (!v) return
+    if (videoPaused) v.pause()
+    else v.play().catch(()=>{})
+  }, [videoPaused])
 
   return (
     <div className={`feed-card`} onDoubleClick={onDoubleTap} style={{height:'auto',minHeight:'100dvh',display:'flex',flexDirection:'column',background:'#000'}}>
@@ -39,21 +50,69 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
       {/* Media */}
       {(hasImages || isVideo) && (
         <div style={{width:'100%',aspectRatio:'1',background:'#0a0a0a',position:'relative',overflow:'hidden',flexShrink:0}}>
-          {isVideo
-            ? <video src={p.video_url} style={{width:'100%',height:'100%',objectFit:'cover'}} autoPlay muted loop playsInline controls={false}/>
-            : <img src={p.images[imgIdx]} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-          }
-          {/* Multi-image counter */}
-          {p.images?.length > 1 && (
-            <div style={{position:'absolute',top:10,right:10,background:'rgba(0,0,0,0.6)',borderRadius:20,padding:'3px 8px',fontSize:11,fontWeight:700,color:'white'}}>{imgIdx+1}/{p.images.length}</div>
-          )}
-          {/* Dot nav */}
-          {p.images?.length > 1 && (
-            <div style={{position:'absolute',bottom:10,left:0,right:0,display:'flex',justifyContent:'center',gap:5}}>
-              {p.images.map((_,i)=>(
-                <div key={i} onClick={()=>setImgIdx(i)} style={{width:i===imgIdx?18:5,height:5,borderRadius:3,background:i===imgIdx?'white':'rgba(255,255,255,0.35)',cursor:'pointer',transition:'all 0.2s'}}/>
-              ))}
-            </div>
+          {isVideo ? (
+            <>
+              <video
+                ref={socialVideoRef}
+                src={p.video_url}
+                style={{width:'100%',height:'100%',objectFit:'cover'}}
+                autoPlay
+                muted={videoMuted}
+                loop
+                playsInline
+                controls={false}
+                onClick={()=>setVideoPaused(x=>!x)}
+              />
+              {/* Pause indicator */}
+              {videoPaused && (
+                <div onClick={()=>setVideoPaused(false)} style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',background:'rgba(0,0,0,0.3)',cursor:'pointer'}}>
+                  <div style={{width:56,height:56,borderRadius:'50%',background:'rgba(0,0,0,0.6)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                  </div>
+                </div>
+              )}
+              {/* Sound toggle */}
+              <button
+                onClick={e=>{e.stopPropagation();setVideoMuted(m=>!m)}}
+                style={{position:'absolute',bottom:10,right:10,width:32,height:32,borderRadius:'50%',background:'rgba(0,0,0,0.6)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:5}}
+              >
+                {videoMuted
+                  ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+                  : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
+                }
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Horizontal scroll for multiple images */}
+              {p.images.length > 1 ? (
+                <div
+                  style={{display:'flex',width:'100%',height:'100%',overflowX:'auto',scrollSnapType:'x mandatory',scrollbarWidth:'none'}}
+                  onScroll={e=>{
+                    const idx = Math.round(e.currentTarget.scrollLeft / e.currentTarget.offsetWidth)
+                    setImgIdx(idx)
+                  }}
+                >
+                  {p.images.map((src,i)=>(
+                    <img key={i} src={src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',flexShrink:0,scrollSnapAlign:'start'}}/>
+                  ))}
+                </div>
+              ) : (
+                <img src={p.images[0]} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+              )}
+              {/* Multi-image counter */}
+              {p.images?.length > 1 && (
+                <div style={{position:'absolute',top:10,right:10,background:'rgba(0,0,0,0.6)',borderRadius:20,padding:'3px 8px',fontSize:11,fontWeight:700,color:'white'}}>{imgIdx+1}/{p.images.length}</div>
+              )}
+              {/* Dot nav */}
+              {p.images?.length > 1 && (
+                <div style={{position:'absolute',bottom:10,left:0,right:0,display:'flex',justifyContent:'center',gap:5}}>
+                  {p.images.map((_,i)=>(
+                    <div key={i} style={{width:i===imgIdx?18:5,height:5,borderRadius:3,background:i===imgIdx?'white':'rgba(255,255,255,0.35)',transition:'all 0.2s'}}/>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       )}
@@ -212,23 +271,24 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   const handleChatSeller = async () => {
     if (!currentUser) { return }
     // Create or find conversation
-    const { data: existing } = await import('../lib/supabase').then(m =>
-      m.supabase.from('conversations')
-        .select('*,post:posts(id,title,price,images,emoji,bg_color,condition),buyer_profile:profiles!buyer_id(id,full_name,username,avatar_url,verified),seller_profile:profiles!seller_id(id,full_name,username,avatar_url,verified)')
-        .eq('post_id', p.id).eq('buyer_id', currentUser.id).eq('seller_id', p.seller_id).maybeSingle()
-    )
+    const { supabase: sb } = await import('../lib/supabase')
+    const { data: existing } = await sb.from('conversations')
+      .select('*,post:posts(id,title,price,images,emoji,bg_color,condition),buyer_profile:profiles!buyer_id(id,full_name,username,avatar_url,verified),seller_profile:profiles!seller_id(id,full_name,username,avatar_url,verified)')
+      .eq('post_id', p.id).eq('buyer_id', currentUser.id).eq('seller_id', p.seller_id).maybeSingle()
+
     if (existing) { setConversation(existing); setShowChat(true); return }
 
-    const { data: newConvo } = await import('../lib/supabase').then(m =>
-      m.supabase.from('conversations').insert({
-        post_id: p.id, buyer_id: currentUser.id, seller_id: p.seller_id,
-        last_message: `Hi, I\'m interested in ${p.title}`, last_at: new Date().toISOString(),
-        context_type: 'product', context_id: p.id,
-      }).select('*,post:posts(id,title,price,images,emoji,bg_color,condition),buyer_profile:profiles!buyer_id(id,full_name,username,avatar_url,verified),seller_profile:profiles!seller_id(id,full_name,username,avatar_url,verified)').single()
-    )
+    const { data: newConvo } = await sb.from('conversations').insert({
+      post_id: p.id, buyer_id: currentUser.id, seller_id: p.seller_id,
+      last_message: `Hi, I'm interested in ${p.title}`, last_at: new Date().toISOString(),
+    }).select('*,post:posts(id,title,price,images,emoji,bg_color,condition),buyer_profile:profiles!buyer_id(id,full_name,username,avatar_url,verified),seller_profile:profiles!seller_id(id,full_name,username,avatar_url,verified)').single()
+
     if (newConvo) {
-      const { supabase } = await import('../lib/supabase')
-      await supabase.from('messages').insert({ conversation_id: newConvo.id, sender_id: currentUser.id, content: `Hi, I'm interested in ${p.title}. Is it still available?`, message_type:'text' })
+      await sb.from('messages').insert({
+        conversation_id: newConvo.id,
+        sender_id: currentUser.id,
+        content: `Hi, I'm interested in ${p.title}. Is it still available?`,
+      })
       setConversation(newConvo); setShowChat(true)
     }
   }
@@ -254,7 +314,9 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   )
 
   // ── Product post (TikTok full-screen) ──────────────────────────────────
-  const videoRef = useRef(null)
+  const videoRef   = useRef(null)
+  const [muted,    setMuted]    = useState(false)
+  const [imgIdx,   setImgIdx]   = useState(0)
 
   // Control video play/pause
   useEffect(() => {
@@ -264,32 +326,91 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
     else v.play().catch(()=>{})
   }, [paused])
 
+  const hasImages  = p.images?.length > 0
+  const multiImage = hasImages && p.images.length > 1
+  const isVideo    = !!p.video_url
+
   return (
     <div className={`feed-card${paused?' paused':''}`} onDoubleClick={handleDoubleTap}>
-      {/* Background — video takes priority, then image, then color/emoji */}
-      {p.video_url ? (
+      {/* Background — video > images > color/emoji */}
+      {isVideo ? (
         <video
           ref={videoRef}
           src={p.video_url}
           className="feed-media-bg"
           style={{objectFit:'cover', width:'100%', height:'100%'}}
           autoPlay
-          muted={false}
+          muted={muted}
           loop
           playsInline
           onClick={()=>setPaused(x=>!x)}
         />
+      ) : hasImages ? (
+        multiImage ? (
+          /* TikTok-style horizontal scroll for multiple images */
+          <div
+            className="feed-media-bg"
+            style={{display:'flex',overflowX:'auto',scrollSnapType:'x mandatory',scrollbarWidth:'none',WebkitOverflowScrolling:'touch'}}
+            onScroll={e=>{
+              const idx = Math.round(e.currentTarget.scrollLeft / e.currentTarget.offsetWidth)
+              setImgIdx(idx)
+            }}
+            onClick={()=>setPaused(x=>!x)}
+          >
+            {p.images.map((src,i)=>(
+              <img key={i} src={src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',flexShrink:0,scrollSnapAlign:'start'}}/>
+            ))}
+          </div>
+        ) : (
+          <img
+            src={p.images[0]}
+            alt=""
+            className="feed-media-bg"
+            style={{objectFit:'cover',width:'100%',height:'100%'}}
+            onClick={()=>setPaused(x=>!x)}
+          />
+        )
       ) : (
         <div className="feed-media-bg" style={{
-          background: p.images?.[0] ? '#000' : (p.bg_color||'#0d0d0d'),
-          backgroundImage: p.images?.[0] ? `url(${p.images[0]})` : 'none',
-          backgroundSize:'cover', backgroundPosition:'center'
+          background: p.bg_color||'#0d0d0d',
+          display:'flex',alignItems:'center',justifyContent:'center'
         }} onClick={()=>setPaused(x=>!x)}>
-          {!p.images?.[0] && p.emoji && <div className="feed-media-emoji">{p.emoji}</div>}
+          {p.emoji && <div className="feed-media-emoji">{p.emoji}</div>}
         </div>
       )}
+
       <div className="feed-overlay"/>
-      <div className="feed-play"><i className="fas fa-play"/></div>
+
+      {/* Play/pause indicator */}
+      {paused && (
+        <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',zIndex:18,pointerEvents:'none'}}>
+          <div style={{width:64,height:64,borderRadius:'50%',background:'rgba(0,0,0,0.55)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          </div>
+        </div>
+      )}
+
+      {/* Multi-image indicator dots */}
+      {multiImage && (
+        <div style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px) + 60px)',left:0,right:0,display:'flex',justifyContent:'center',gap:4,zIndex:16,pointerEvents:'none'}}>
+          {p.images.map((_,i)=>(
+            <div key={i} style={{width:i===imgIdx?18:5,height:4,borderRadius:2,background:i===imgIdx?'white':'rgba(255,255,255,0.4)',transition:'all 0.2s'}}/>
+          ))}
+        </div>
+      )}
+
+      {/* Sound toggle for video */}
+      {isVideo && (
+        <button
+          onClick={e=>{e.stopPropagation();setMuted(m=>!m)}}
+          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px) + 60px)',right:14,width:34,height:34,borderRadius:'50%',background:'rgba(0,0,0,0.55)',border:'none',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',zIndex:17}}
+        >
+          {muted
+            ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+            : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
+          }
+        </button>
+      )}
 
       {/* Distance badge */}
       {distanceKm!==null&&(

@@ -3,11 +3,17 @@
  * Matches the UI design: product card, location, payment options,
  * delivery, address, payment method, confirm button
  */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatUGX } from '../lib/feed'
 
 export default function ReservationPage({ post, seller, currentUser, onBack, onConfirmed }) {
+  // Hide bottom nav while reservation page is open
+  useEffect(() => {
+    const nav = document.querySelector('.bottom-nav')
+    if (nav) nav.style.display = 'none'
+    return () => { if (nav) nav.style.display = '' }
+  }, [])
   const [paymentOption, setPaymentOption] = useState('full')   // 'full' | 'half'
   const [deliveryType,  setDeliveryType]  = useState('delivery') // 'pickup' | 'delivery'
   const [payMethod,     setPayMethod]     = useState('momo')    // 'momo' | 'airtel' | 'card'
@@ -61,9 +67,7 @@ export default function ReservationPage({ post, seller, currentUser, onBack, onC
         await supabase.from('messages').insert({
           conversation_id: conv.id,
           sender_id: currentUser.id,
-          content: `Reservation confirmed! I've reserved ${post.title} for UGX ${price.toLocaleString()}. ${deliveryType === 'delivery' ? 'Requesting delivery.' : 'I will pick up.'}`,
-          message_type: 'reservation',
-          metadata: { post_id: post.id, post_title: post.title, price, order_id: order?.id },
+          content: `🛍️ Reservation confirmed! I've reserved ${post.title} for UGX ${price.toLocaleString()}. ${deliveryType === 'delivery' ? 'Requesting delivery.' : 'I will pick it up.'}`,
         })
       }
 

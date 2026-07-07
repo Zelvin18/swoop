@@ -19,12 +19,14 @@ export default function ProfilePage({ showToast, onWallet, user, onSignOut }) {
   useEffect(() => { if (user?.id) loadProfile() }, [user?.id])
 
   const loadProfile = async () => {
-    const [{ data: prof }, { data: userPosts }] = await Promise.all([
+    const [{ data: prof }, { data: userPosts, error: postsErr }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase.from('posts').select('*').eq('seller_id', user.id).neq('status','draft').order('created_at',{ascending:false}).limit(30),
+      supabase.from('posts').select('*').eq('seller_id', user.id).order('created_at',{ascending:false}).limit(30),
     ])
+    if (postsErr) console.error('loadProfile posts error:', postsErr)
     setProfile(prof)
-    setPosts(userPosts || [])
+    // Show all posts except drafts
+    setPosts((userPosts || []).filter(p => p.status !== 'draft'))
     setLoading(false)
   }
 

@@ -65,8 +65,9 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
   const [serviceFeatures, setServiceFeatures] = useState(['','',''])
   const [serviceDuration, setServiceDuration] = useState('')
 
-  const photoRef = useRef(null)
-  const videoRef = useRef(null)
+  const photoRef   = useRef(null)
+  const videoRef   = useRef(null)
+  const galleryRef = useRef(null)
 
   const canPostProduct = title.trim().length >= 2 && price
   const canPostSocial  = caption.trim().length >= 1 || mediaFiles.length > 0
@@ -82,6 +83,12 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
   const handleVideoRecord = (e) => {
     const file = e.target.files?.[0]; if (!file) return
     setMediaFiles([{url:URL.createObjectURL(file),file,type:'video'}])
+    setStep('editing')
+  }
+  const handleGalleryPick = (e) => {
+    const files = Array.from(e.target.files||[]).slice(0,10)
+    if (!files.length) return
+    setMediaFiles(files.map(f=>({url:URL.createObjectURL(f),file:f,type:f.type.startsWith('video')?'video':'photo'})))
     setStep('editing')
   }
   const removeMedia = (idx) => setMediaFiles(p=>p.filter((_,i)=>i!==idx))
@@ -132,10 +139,13 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
       }
     } catch (err) {
       console.error('Post error:', err)
+      showToast('Failed to post. Check console for details.')
+      setPosting(false)
+      return
     }
     setPosting(false)
-    if (post) { showToast('Post published!'); onClose() }
-    else showToast('Failed to post. Try again.')
+    if (post) { showToast('Post published! 🎉'); onClose() }
+    else showToast('Failed to post — run fix-schema.sql in Supabase first.')
   }
 
   // ── Media editor ────────────────────────────────────────────────────────
@@ -287,6 +297,7 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
       <div style={S.page}>
         <input ref={videoRef} type="file" accept="video/*" capture="environment" onChange={handleVideoRecord} style={{display:'none'}}/>
         <input ref={photoRef} type="file" accept="image/*" multiple onChange={handlePhotoPick} style={{display:'none'}}/>
+        <input ref={galleryRef} type="file" accept="image/*,video/*" multiple onChange={handleGalleryPick} style={{display:'none'}}/>
         <div style={S.topBar}>
           <button onClick={()=>setStep('type')} style={S.iconBtn}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
@@ -319,7 +330,7 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
 
         <div style={S.mediaList}>
           <label style={S.mediaRow}>
-            <input ref={videoRef} type="file" accept="video/*" capture="environment" onChange={handleVideoRecord} style={{display:'none'}}/>
+            <input type="file" accept="video/*" capture="environment" onChange={handleVideoRecord} style={{display:'none'}}/>
             <div style={{...S.mediaRowIcon, background:`${cfg.accent}20`, border:`1px solid ${cfg.accent}35`}}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={cfg.accent} strokeWidth="2" strokeLinecap="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
             </div>
@@ -331,13 +342,13 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
           </label>
           <div style={S.divider}/>
           <label style={S.mediaRow}>
-            <input ref={photoRef} type="file" accept="image/*,video/*" multiple onChange={handlePhotoPick} style={{display:'none'}}/>
+            <input ref={galleryRef} type="file" accept="image/*,video/*" multiple onChange={handleGalleryPick} style={{display:'none'}}/>
             <div style={{...S.mediaRowIcon, background:`${cfg.accent}14`, border:`1px solid ${cfg.accent}30`}}>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={cfg.accent} strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:15,fontWeight:700}}>Add Photos</div>
-              <div style={{fontSize:12,color:'#71717A',marginTop:1}}>Up to 10 photos · First becomes cover</div>
+              <div style={{fontSize:15,fontWeight:700}}>Choose from Gallery</div>
+              <div style={{fontSize:12,color:'#71717A',marginTop:1}}>Photos &amp; videos · Up to 10 items</div>
             </div>
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#52525B" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18l6-6-6-6"/></svg>
           </label>
