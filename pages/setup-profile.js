@@ -69,8 +69,7 @@ export default function SetupProfilePage() {
     const { error: profileErr } = await supabase.from('profiles').upsert({
       id:         user.id,
       username:   username.trim().toLowerCase(),
-      avatar_url: uploadedUrl,
-      updated_at: new Date().toISOString(),
+      avatar_url: uploadedUrl || undefined,
     })
 
     setLoading(false)
