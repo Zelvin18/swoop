@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import CameraPreview from './CameraPreview'
 
 const PLACEHOLDER_COMMENTS = [
   { id:1, user:'kelvin_254', text:'🔥🔥🔥',                          color:'#7C3AED' },
@@ -61,7 +62,9 @@ export default function LiveSocialPage({ config, onEnd }) {
     <div style={s.page}>
 
       {/* Full screen camera bg */}
-      <div style={s.videoBg} />
+      <div style={{ position:'absolute', inset:0, zIndex:0 }}>
+        <CameraPreview facingMode={cameraFront?'user':'environment'} style={{width:'100%',height:'100%'}}/>
+      </div>
       <div style={s.overlay} />
 
       {/* Floating gift animations */}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import CameraPreview from './CameraPreview'
 
 const SAMPLE_COMMENTS = [
   { id:1,  user:'kelvin_254', text:'Is the first item still available?', color:'#7C3AED' },
@@ -70,8 +71,7 @@ export default function LiveSellingPage({ config, onEnd }) {
 
         {/* Camera placeholder */}
         <div style={S.videoBg}>
-          <i className="fas fa-video" style={{ fontSize:44, color:'rgba(255,255,255,0.08)' }} />
-          <div style={{ fontSize:12, color:'rgba(255,255,255,0.15)', marginTop:10 }}>Camera preview</div>
+          <CameraPreview/>
         </div>
 
         {/* Top gradient for readability */}
@@ -295,9 +295,9 @@ const S = {
     overflow:'hidden',
   },
   videoBg: {
-    width:'100%', height:'100%',
-    display:'flex', flexDirection:'column',
-    alignItems:'center', justifyContent:'center',
+    position: 'absolute', inset: 0,
+    width: '100%', height: '100%',
+    overflow: 'hidden',
   },
   topGrad: {
     position:'absolute', top:0, left:0, right:0, height:100,

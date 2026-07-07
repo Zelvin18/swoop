@@ -4,24 +4,16 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { supabase } from '../lib/supabase'
 
-// ── SWOOP logo SVG (SW∞P wordmark) ───────────────────────────────────────────
+// ── SWOOP logo matching the brand ────────────────────────────────────────────
 function SwoopLogo({ size = 48 }) {
   return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <svg width={size * 4.2} height={size} viewBox="0 0 200 48" fill="none">
-        {/* SW */}
-        <text x="0" y="38" fontFamily="'Inter',sans-serif" fontWeight="900" fontSize="40" fill="white">SW</text>
-        {/* ∞ in gradient */}
-        <text x="76" y="40" fontFamily="'Inter',sans-serif" fontWeight="900" fontSize="44" fill="url(#logoGrad)">∞</text>
-        {/* P */}
-        <text x="132" y="38" fontFamily="'Inter',sans-serif" fontWeight="900" fontSize="40" fill="white">P</text>
-        <defs>
-          <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#FF3366"/>
-            <stop offset="100%" stopColor="#FF6633"/>
-          </linearGradient>
-        </defs>
-      </svg>
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5 }}>
+      <div style={{ fontSize: size, fontWeight:900, letterSpacing:'-2px', lineHeight:1, display:'flex', alignItems:'center' }}>
+        <span style={{ color:'white' }}>SW</span>
+        <span style={{ background:'linear-gradient(135deg,#FF3366,#FF6633)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text', fontSize: size * 1.1, letterSpacing:'-4px', margin:'0 -2px' }}>∞</span>
+        <span style={{ color:'white' }}>P</span>
+      </div>
+      <div style={{ fontSize:10, fontWeight:700, letterSpacing:3, color:'rgba(255,255,255,0.35)' }}>BUY. SELL. CONNECT.</div>
     </div>
   )
 }
@@ -38,9 +30,12 @@ export default function LoginPage() {
     e.preventDefault()
     setError(''); setLoading(true)
     const isEmail = identifier.includes('@')
-    const email   = isEmail ? identifier : `${identifier.replace(/\s+/g,'')}@swoop.ug`
+    // Phone login: we registered them with phone@swoop.ug pattern
+    const email = isEmail
+      ? identifier.trim().toLowerCase()
+      : `${identifier.replace(/\D/g,'').replace(/^0/,'256')}@swoop.ug`
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
-    if (authError) { setError(authError.message); setLoading(false); return }
+    if (authError) { setError('Invalid email/phone or password. Please check your details.'); setLoading(false); return }
     router.push('/')
   }
 

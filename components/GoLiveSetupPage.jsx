@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import CameraPreview from './CameraPreview'
 
 const CATEGORIES = ['Phones','Electronics','Fashion','Sneakers','Home','Beauty','Cars','Other']
 
@@ -38,22 +39,11 @@ export default function GoLiveSetupPage({ onClose, onStartSell, onStartSocial })
           <div style={{ width: 36 }} />
         </div>
 
-        {/* Camera preview placeholder */}
+        {/* Camera preview */}
         <div style={s.cameraPreview}>
-          <div style={s.cameraPlaceholder}>
-            <i className="fas fa-camera" style={{ fontSize: 48, color: 'rgba(255,255,255,0.15)' }} />
-            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.3)', marginTop: 12 }}>Camera preview</div>
-          </div>
-          {/* Flip camera */}
-          <button
-            onClick={() => setCameraFront(f => !f)}
-            style={s.flipBtn}
-          >
+          <CameraPreview facingMode={cameraFront?'user':'environment'} style={{width:'100%',height:'100%'}}/>
+          <button onClick={() => setCameraFront(f => !f)} style={s.flipBtn}>
             <i className="fas fa-camera-rotate" style={{ fontSize: 16 }} />
-          </button>
-          {/* Beauty filter btn */}
-          <button style={{ ...s.flipBtn, bottom: 16, right: 16, top: 'auto' }}>
-            <i className="fas fa-wand-magic-sparkles" style={{ fontSize: 15 }} />
           </button>
         </div>
 
