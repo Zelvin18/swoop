@@ -97,9 +97,7 @@ export default function GoLiveSetupPage({ onClose, onStartSell, onStartSocial })
         </div>
 
         <div style={s.cameraPreview}>
-          <div style={s.cameraPlaceholder}>
-            <i className="fas fa-camera" style={{ fontSize: 48, color: 'rgba(255,255,255,0.15)' }} />
-          </div>
+          <CameraPreview facingMode={cameraFront?'user':'environment'} style={{width:'100%',height:'100%'}}/>
           <button onClick={() => setCameraFront(f => !f)} style={s.flipBtn}>
             <i className="fas fa-camera-rotate" style={{ fontSize: 16 }} />
           </button>
@@ -163,9 +161,7 @@ export default function GoLiveSetupPage({ onClose, onStartSell, onStartSocial })
 
         {/* Camera preview (small) */}
         <div style={{ ...s.cameraPreview, height: 180, borderRadius: 16, marginBottom: 20, flexShrink: 0 }}>
-          <div style={s.cameraPlaceholder}>
-            <i className="fas fa-camera" style={{ fontSize: 32, color: 'rgba(255,255,255,0.15)' }} />
-          </div>
+          <CameraPreview facingMode={cameraFront?'user':'environment'} style={{width:'100%',height:'100%',borderRadius:16}}/>
           <button onClick={() => setCameraFront(f => !f)} style={s.flipBtn}>
             <i className="fas fa-camera-rotate" style={{ fontSize: 15 }} />
           </button>

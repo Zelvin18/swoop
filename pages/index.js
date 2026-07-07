@@ -19,14 +19,15 @@ export default function Home() {
   const [authLoading, setAuthLoading] = useState(true)
 
   useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null)
       setAuthLoading(false)
-      if (!session) router.replace('/login')
+      if (!session) { router.replace('/login'); return }
+      // Check if user has completed profile setup (has username)
+      const { data: profile } = await supabase.from('profiles').select('username').eq('id', session.user.id).single()
+      if (!profile?.username) { router.replace('/setup-profile') }
     })
 
-    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
       if (!session) router.replace('/login')

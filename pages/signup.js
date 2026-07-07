@@ -136,7 +136,7 @@ export default function SignupPage() {
             </div>
           </div>
 
-          <div style={{position:'relative',zIndex:2}}>
+        <div style={{position:'relative',zIndex:2}}>
             <div style={{fontSize:28,fontWeight:900,letterSpacing:'-0.5px',lineHeight:1.15}}>
               Create <span style={{color:'#FF3366'}}>account</span>
             </div>
