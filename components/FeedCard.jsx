@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { formatUGX, discountPct, fmtCount, fmtDistance, likePost, unlikePost, savePost, unsavePost, sharePost, recordView } from '../lib/feed'
+import { supabase } from '../lib/supabase'
 import ReservationPage from './ReservationPage'
 import ChatScreen      from './ChatScreen'
 
@@ -388,10 +389,8 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   // Check if current user follows this seller on mount
   useEffect(()=>{
     if (!currentUser?.id || !seller?.id || currentUser.id === seller.id) return
-    import('../lib/supabase').then(({supabase:sb})=>{
-      sb.from('follows').select('id').eq('follower_id',currentUser.id).eq('following_id',seller.id).maybeSingle()
-        .then(({data})=>setFollowing(!!data))
-    })
+    supabase.from('follows').select('id').eq('follower_id',currentUser.id).eq('following_id',seller.id).maybeSingle()
+      .then(({data})=>setFollowing(!!data))
   },[currentUser?.id, seller?.id])
 
   useEffect(()=>{setLiked(initialLiked)},[initialLiked])
@@ -458,33 +457,30 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
 
   const handleFollow = async () => {
     if (!currentUser || !seller?.id || currentUser.id === seller.id) return
-    const { supabase: sb } = await import('../lib/supabase')
     if (following) {
       setFollowing(false)
-      await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', seller.id)
+      await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', seller.id)
     } else {
       setFollowing(true)
-      await sb.from('follows').insert({ follower_id: currentUser.id, following_id: seller.id })
+      await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: seller.id })
     }
   }
 
   const handleChatSeller = async () => {
     if (!currentUser) { return }
-    // Create or find conversation
-    const { supabase: sb } = await import('../lib/supabase')
-    const { data: existing } = await sb.from('conversations')
+    const { data: existing } = await supabase.from('conversations')
       .select('*,post:posts(id,title,price,images,emoji,bg_color,condition),buyer_profile:profiles!buyer_id(id,full_name,username,avatar_url,verified),seller_profile:profiles!seller_id(id,full_name,username,avatar_url,verified)')
       .eq('post_id', p.id).eq('buyer_id', currentUser.id).eq('seller_id', p.seller_id).maybeSingle()
 
     if (existing) { setConversation(existing); setShowChat(true); return }
 
-    const { data: newConvo } = await sb.from('conversations').insert({
+    const { data: newConvo } = await supabase.from('conversations').insert({
       post_id: p.id, buyer_id: currentUser.id, seller_id: p.seller_id,
       last_message: `Hi, I'm interested in ${p.title}`, last_at: new Date().toISOString(),
     }).select('*,post:posts(id,title,price,images,emoji,bg_color,condition),buyer_profile:profiles!buyer_id(id,full_name,username,avatar_url,verified),seller_profile:profiles!seller_id(id,full_name,username,avatar_url,verified)').single()
 
     if (newConvo) {
-      await sb.from('messages').insert({
+      await supabase.from('messages').insert({
         conversation_id: newConvo.id,
         sender_id: currentUser.id,
         content: `Hi, I'm interested in ${p.title}. Is it still available?`,
