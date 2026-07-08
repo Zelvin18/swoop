@@ -89,25 +89,17 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
         </div>
       )}
 
-      {/* Mute pill — top left, subtle */}
-      {isVideo && (
-        <button onClick={e=>{e.stopPropagation();const v=videoRef.current;if(v){v.muted=!muted;setMuted(m=>!m)}}}
-          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.45)',backdropFilter:'blur(6px)',border:'none',borderRadius:20,padding:'5px 10px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px'}}>
-          {muted
-            ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg> Tap to unmute</>
-            : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg> Sound on</>
-          }
+      {/* Mute pill — only shown when muted */}
+      {isVideo && muted && (
+        <button onClick={e=>{e.stopPropagation();const v=videoRef.current;if(v){v.muted=false;setMuted(false)}}}
+          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+          Tap or raise volume
         </button>
       )}
 
-      {/* ── Right side action strip — transparent icons ── */}
+      {/* ── Right side action strip — transparent icons, NO avatar above icons ── */}
       <div style={{position:'absolute',right:10,bottom:'calc(var(--nav-h,50px) + var(--safe-bottom,0px) + 80px)',display:'flex',flexDirection:'column',alignItems:'center',gap:18,zIndex:20}}>
-        <div style={{position:'relative',marginBottom:6}}>
-          <div style={{width:40,height:40,borderRadius:'50%',background:sellerColor,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:900,color:'white',border:'2px solid white',boxShadow:'0 2px 10px rgba(0,0,0,0.6)'}}>{sellerInitial}</div>
-          <div style={{position:'absolute',bottom:-5,left:'50%',transform:'translateX(-50%)',width:16,height:16,borderRadius:'50%',background:'#FF3366',display:'flex',alignItems:'center',justifyContent:'center',border:'1.5px solid #000'}}>
-            <svg width="8" height="8" viewBox="0 0 12 12"><line x1="6" y1="1" x2="6" y2="11" stroke="white" strokeWidth="2.5" strokeLinecap="round"/><line x1="1" y1="6" x2="11" y2="6" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg>
-          </div>
-        </div>
         <RightAction onClick={onLike} count={fmtCount(likes)} active={liked} activeColor="#FF3366">
           <svg width="28" height="28" viewBox="0 0 24 24" fill={liked?'#FF3366':'none'} stroke={liked?'#FF3366':'white'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 6px rgba(0,0,0,0.9))'}}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
         </RightAction>
@@ -125,7 +117,13 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
       {/* ── Bottom info ── */}
       <div style={{position:'absolute',left:0,right:0,bottom:'calc(var(--nav-h,50px) + var(--safe-bottom,0px))',zIndex:20,padding:'0 14px 14px 14px',paddingRight:68}}>
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
-          <div style={{width:30,height:30,borderRadius:'50%',background:sellerColor,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:900,color:'white',flexShrink:0,boxShadow:'0 1px 6px rgba(0,0,0,0.5)'}}>{sellerInitial}</div>
+          {/* Real profile picture */}
+          <div style={{width:32,height:32,borderRadius:'50%',background:sellerColor,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:900,color:'white',flexShrink:0,boxShadow:'0 1px 6px rgba(0,0,0,0.5)',overflow:'hidden',border:'1.5px solid rgba(255,255,255,0.6)'}}>
+            {seller?.avatar_url
+              ? <img src={seller.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+              : sellerInitial
+            }
+          </div>
           <span style={{fontSize:13,fontWeight:700,color:'white',textShadow:'0 1px 4px rgba(0,0,0,0.9)'}}>{seller?.full_name||seller?.username||'User'}</span>
           {seller?.verified&&<span style={{width:14,height:14,borderRadius:'50%',background:'#3B82F6',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:7,color:'white',fontWeight:900,flexShrink:0}}>✓</span>}
         </div>
@@ -251,25 +249,17 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
         </div>
       )}
 
-      {/* Mute pill */}
-      {isVideo && (
-        <button onClick={e=>{e.stopPropagation();const v=videoRef.current;if(v){v.muted=!muted;setMuted(m=>!m)}}}
-          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.45)',backdropFilter:'blur(6px)',border:'none',borderRadius:20,padding:'5px 10px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px'}}>
-          {muted
-            ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg> Tap to unmute</>
-            : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg> Sound on</>
-          }
+      {/* Mute pill — only shown when muted */}
+      {isVideo && muted && (
+        <button onClick={e=>{e.stopPropagation();const v=videoRef.current;if(v){v.muted=false;setMuted(false)}}}
+          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+          Tap or raise volume
         </button>
       )}
 
-      {/* ── Right side actions — transparent, same as product ── */}
+      {/* ── Right side actions — transparent, no avatar circle above icons ── */}
       <div style={{position:'absolute',right:10,bottom:'calc(var(--nav-h,50px) + var(--safe-bottom,0px) + 80px)',display:'flex',flexDirection:'column',alignItems:'center',gap:18,zIndex:20}}>
-        <div style={{position:'relative',marginBottom:6}}>
-          <div style={{width:40,height:40,borderRadius:'50%',background:sellerColor,display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:900,color:'white',border:'2px solid white',boxShadow:'0 2px 10px rgba(0,0,0,0.6)'}}>{sellerInitial}</div>
-          <div style={{position:'absolute',bottom:-5,left:'50%',transform:'translateX(-50%)',width:16,height:16,borderRadius:'50%',background:'#FF3366',display:'flex',alignItems:'center',justifyContent:'center',border:'1.5px solid #000'}}>
-            <svg width="8" height="8" viewBox="0 0 12 12"><line x1="6" y1="1" x2="6" y2="11" stroke="white" strokeWidth="2.5" strokeLinecap="round"/><line x1="1" y1="6" x2="11" y2="6" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg>
-          </div>
-        </div>
         <RightAction onClick={onLike} count={fmtCount(likes)} active={liked} activeColor="#FF3366">
           <svg width="28" height="28" viewBox="0 0 24 24" fill={liked?'#FF3366':'none'} stroke={liked?'#FF3366':'white'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 6px rgba(0,0,0,0.9))'}}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
         </RightAction>
@@ -287,7 +277,12 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
       {/* ── Bottom info — same style as product ── */}
       <div className="feed-info">
         <div className="feed-seller-row">
-          <div className="feed-seller-av" style={{background:sellerColor}}>{sellerInitial}</div>
+          <div className="feed-seller-av" style={{background:sellerColor,overflow:'hidden'}}>
+            {seller?.avatar_url
+              ? <img src={seller.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+              : sellerInitial
+            }
+          </div>
           <span className="feed-seller-name-txt">
             {seller?.full_name||seller?.username||'Seller'}
             {seller?.verified&&<span className="feed-verified">✓</span>}
@@ -350,6 +345,15 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   const priceStr = formatUGX(p.price)
   const origStr  = p.orig_price ? formatUGX(p.orig_price) : null
 
+  // Check if current user follows this seller on mount
+  useEffect(()=>{
+    if (!currentUser?.id || !seller?.id || currentUser.id === seller.id) return
+    import('../lib/supabase').then(({supabase:sb})=>{
+      sb.from('follows').select('id').eq('follower_id',currentUser.id).eq('following_id',seller.id).maybeSingle()
+        .then(({data})=>setFollowing(!!data))
+    })
+  },[currentUser?.id, seller?.id])
+
   useEffect(()=>{setLiked(initialLiked)},[initialLiked])
   useEffect(()=>{setSaved(initialSaved)},[initialSaved])
   useEffect(()=>()=>clearTimeout(heartTimer.current),[])
@@ -403,6 +407,18 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   const handleBuyNow = async () => {
     if (!currentUser) { return }
     setShowReserve(true)
+  }
+
+  const handleFollow = async () => {
+    if (!currentUser || !seller?.id || currentUser.id === seller.id) return
+    const { supabase: sb } = await import('../lib/supabase')
+    if (following) {
+      setFollowing(false)
+      await sb.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', seller.id)
+    } else {
+      setFollowing(true)
+      await sb.from('follows').insert({ follower_id: currentUser.id, following_id: seller.id })
+    }
   }
 
   const handleChatSeller = async () => {
@@ -524,14 +540,12 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
         </div>
       )}
 
-      {/* Mute pill for product video */}
-      {isVideo && (
-        <button onClick={e=>{e.stopPropagation();const v=videoRef.current;if(v){v.muted=!muted;setMuted(m=>!m)}}}
-          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.45)',backdropFilter:'blur(6px)',border:'none',borderRadius:20,padding:'5px 10px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px'}}>
-          {muted
-            ? <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg> Tap to unmute</>
-            : <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 010 7.07"/></svg> Sound on</>
-          }
+      {/* Mute pill — top left — only visible when muted, auto-hides when unmuted */}
+      {isVideo && muted && (
+        <button onClick={e=>{e.stopPropagation();const v=videoRef.current;if(v){v.muted=false;setMuted(false)}}}
+          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+          Tap or raise volume
         </button>
       )}
 
@@ -545,35 +559,24 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
 
       {/* Hot badge */}
       {p.is_hot&&(
-        <div style={{position:'absolute',top:'50%',left:14,marginTop:-80,background:'linear-gradient(135deg,#FF3366,#F97316)',borderRadius:20,padding:'4px 12px',fontSize:11,fontWeight:800,color:'white',display:'flex',alignItems:'center',gap:5,zIndex:16,boxShadow:'0 2px 12px rgba(255,51,102,0.4)'}}>
+        <div style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px) + 58px)',left:14,background:'linear-gradient(135deg,#FF3366,#F97316)',borderRadius:20,padding:'4px 12px',fontSize:11,fontWeight:800,color:'white',display:'flex',alignItems:'center',gap:5,zIndex:16,boxShadow:'0 2px 12px rgba(255,51,102,0.4)'}}>
           🔥 Hot Deal
         </div>
       )}
 
-      {/* Right actions — transparent, Instagram-style */}
+      {/* Right actions — transparent, no avatar circle, consistent icon order */}
       <div className="feed-actions">
-        {/* Seller avatar */}
-        <div style={{position:'relative',marginBottom:6}}>
-          <div className="feed-action-av" style={{background:sellerColor,width:42,height:42,fontSize:14,fontWeight:900,border:'2px solid white',boxShadow:'0 2px 10px rgba(0,0,0,0.6)'}}>{sellerInitial}</div>
-          <div style={{position:'absolute',bottom:-5,left:'50%',transform:'translateX(-50%)',width:16,height:16,borderRadius:'50%',background:'#FF3366',display:'flex',alignItems:'center',justifyContent:'center',border:'1.5px solid #000'}}>
-            <svg width="8" height="8" viewBox="0 0 12 12"><line x1="6" y1="1" x2="6" y2="11" stroke="white" strokeWidth="2.5" strokeLinecap="round"/><line x1="1" y1="6" x2="11" y2="6" stroke="white" strokeWidth="2.5" strokeLinecap="round"/></svg>
-          </div>
-        </div>
-        {/* Like */}
         <RightAction onClick={handleLike} count={fmtCount(likes)} active={liked} activeColor="#FF3366">
           <svg width="28" height="28" viewBox="0 0 24 24" fill={liked?'#FF3366':'none'} stroke={liked?'#FF3366':'white'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 8px rgba(0,0,0,1))'}}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
         </RightAction>
-        {/* Comment */}
         <RightAction onClick={()=>onOpenComments&&onOpenComments(p)} count={fmtCount(p.comments_count||0)}>
           <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 8px rgba(0,0,0,1))'}}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
         </RightAction>
-        {/* Save */}
-        <RightAction onClick={handleSave} count={fmtCount(saves)} active={saved} activeColor="#FF3366">
-          <svg width="24" height="28" viewBox="0 0 24 24" fill={saved?'#FF3366':'none'} stroke={saved?'#FF3366':'white'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 8px rgba(0,0,0,1))'}}><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
-        </RightAction>
-        {/* Share */}
         <RightAction onClick={handleShare} count={fmtCount(p.shares_count||0)}>
           <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 8px rgba(0,0,0,1))'}}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </RightAction>
+        <RightAction onClick={handleSave} count={fmtCount(saves)} active={saved} activeColor="#FF3366">
+          <svg width="24" height="28" viewBox="0 0 24 24" fill={saved?'#FF3366':'none'} stroke={saved?'#FF3366':'white'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 8px rgba(0,0,0,1))'}}><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
         </RightAction>
       </div>
 
@@ -581,13 +584,18 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
       <div className="feed-info">
         {distanceKm===null&&(
           <div className="feed-seller-row">
-            <div className="feed-seller-av" style={{background:sellerColor}}>{sellerInitial}</div>
+            <div className="feed-seller-av" style={{background:sellerColor,overflow:'hidden'}}>
+              {seller?.avatar_url
+                ? <img src={seller.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                : sellerInitial
+              }
+            </div>
             <span className="feed-seller-name-txt">
               {seller?.full_name||seller?.username||'Seller'}
               {seller?.verified&&<span className="feed-verified">✓</span>}
             </span>
-            <button className="feed-follow-btn" onClick={()=>setFollowing(f=>!f)} style={{background:following?'rgba(255,51,102,0.15)':'rgba(255,255,255,0.08)',borderColor:following?'#FF3366':'rgba(255,255,255,0.65)',color:following?'#FF3366':'white'}}>
-              {following?'✓ Following':'Follow'}
+            <button className="feed-follow-btn" onClick={handleFollow}>
+              {following ? 'Following' : 'Follow'}
             </button>
           </div>
         )}

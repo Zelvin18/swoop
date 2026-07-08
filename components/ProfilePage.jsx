@@ -15,17 +15,19 @@ export default function ProfilePage({ showToast, onWallet, user, onSignOut }) {
   const [showMenu,     setShowMenu]     = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showDashboard,setShowDashboard]= useState(false)
+  const [viewPost,     setViewPost]     = useState(null)  // post being viewed full-screen
+  const [showFollowers,setShowFollowers]= useState(false)
+  const [showFollowing,setShowFollowing]= useState(false)
 
   useEffect(() => { if (user?.id) loadProfile() }, [user?.id])
 
   const loadProfile = async () => {
     const [{ data: prof }, { data: userPosts, error: postsErr }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase.from('posts').select('*').eq('seller_id', user.id).order('created_at',{ascending:false}).limit(30),
+      supabase.from('posts').select('*').eq('seller_id', user.id).order('created_at',{ascending:false}).limit(50),
     ])
     if (postsErr) console.error('loadProfile posts error:', postsErr)
     setProfile(prof)
-    // Show all posts except drafts
     setPosts((userPosts || []).filter(p => p.status !== 'draft'))
     setLoading(false)
   }
@@ -79,11 +81,11 @@ export default function ProfilePage({ showToast, onWallet, user, onSignOut }) {
         {/* Stats row */}
         <div style={{ flex:1, display:'flex', justifyContent:'space-around', paddingTop:8 }}>
           {[
-            { val: fmtNum(postsCount), label:'Posts' },
-            { val: fmtNum(followers),  label:'Followers', action:()=>showToast('Followers list coming soon') },
-            { val: fmtNum(following),  label:'Following',  action:()=>showToast('Following list coming soon') },
+            { val: fmtNum(postsCount), label:'Posts', action: null },
+            { val: fmtNum(followers),  label:'Followers', action:()=>setShowFollowers(true) },
+            { val: fmtNum(following),  label:'Following',  action:()=>setShowFollowing(true) },
           ].map(s => (
-            <button key={s.label} onClick={s.action} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor: s.action?'pointer':'default' }}>
+            <button key={s.label} onClick={s.action||undefined} style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, background:'none', border:'none', cursor: s.action?'pointer':'default' }}>
               <span style={{ fontSize:18, fontWeight:800, color:'white' }}>{s.val}</span>
               <span style={{ fontSize:12, color:'#71717A' }}>{s.label}</span>
             </button>
@@ -158,7 +160,7 @@ export default function ProfilePage({ showToast, onWallet, user, onSignOut }) {
       ) : (
         <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:2, padding:2 }}>
           {filteredPosts.map(p => (
-            <div key={p.id} onClick={()=>showToast('Post view coming soon')} style={{ aspectRatio:'1', position:'relative', overflow:'hidden', cursor:'pointer', borderRadius:2 }}>
+            <div key={p.id} onClick={()=>setViewPost(p)} style={{ aspectRatio:'1', position:'relative', overflow:'hidden', cursor:'pointer', borderRadius:2 }}>
               {p.images?.[0]
                 ? <img src={p.images[0]} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                 : <div style={{width:'100%',height:'100%',background:p.bg_color||'#141414',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28}}>{p.emoji||'📦'}</div>
@@ -208,6 +210,141 @@ export default function ProfilePage({ showToast, onWallet, user, onSignOut }) {
           showToast={showToast}
         />
       )}
+
+      {/* ── Post viewer ── */}
+      {viewPost && <PostViewer post={viewPost} onClose={()=>setViewPost(null)}/>}
+
+      {/* ── Followers / Following modals ── */}
+      {showFollowers && <FollowListModal userId={user.id} type="followers" onClose={()=>setShowFollowers(false)}/>}
+      {showFollowing && <FollowListModal userId={user.id} type="following" onClose={()=>setShowFollowing(false)}/>}
+    </div>
+  )
+}
+
+// ── Post Viewer — full-screen post view ──────────────────────────────────────
+function PostViewer({ post: p, onClose }) {
+  const isVideo = !!p.video_url
+  const hasImages = p.images?.length > 0
+  const [imgIdx, setImgIdx] = useState(0)
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:400,background:'#000',display:'flex',flexDirection:'column',fontFamily:"'Inter',sans-serif"}}>
+      {/* Header */}
+      <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',paddingTop:'calc(env(safe-area-inset-top,0px)+10px)',background:'rgba(0,0,0,0.85)',backdropFilter:'blur(12px)',flexShrink:0}}>
+        <button onClick={onClose} style={{width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,0.08)',border:'1px solid rgba(255,255,255,0.1)',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer'}}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+        </button>
+        <div style={{flex:1}}>
+          <div style={{fontSize:15,fontWeight:700,color:'white'}}>{p.title||'Post'}</div>
+          <div style={{fontSize:11,color:'#71717A',textTransform:'capitalize'}}>{p.post_type} · {p.status}</div>
+        </div>
+        {p.is_hot && <span style={{fontSize:11,fontWeight:800,padding:'3px 10px',borderRadius:20,background:'linear-gradient(135deg,#FF3366,#F97316)',color:'white'}}>🔥 Hot Deal</span>}
+      </div>
+
+      {/* Media */}
+      <div style={{flex:1,position:'relative',overflow:'hidden',background:'#0a0a0a'}}>
+        {isVideo ? (
+          <video src={p.video_url} style={{width:'100%',height:'100%',objectFit:'contain'}} controls autoPlay playsInline/>
+        ) : hasImages ? (
+          <>
+            {p.images.length > 1 ? (
+              <div style={{display:'flex',width:'100%',height:'100%',overflowX:'auto',scrollSnapType:'x mandatory',scrollbarWidth:'none'}}
+                onScroll={e=>setImgIdx(Math.round(e.currentTarget.scrollLeft/e.currentTarget.offsetWidth))}>
+                {p.images.map((src,i)=>(
+                  <img key={i} src={src} alt="" style={{width:'100%',height:'100%',objectFit:'contain',flexShrink:0,scrollSnapAlign:'start'}}/>
+                ))}
+              </div>
+            ) : (
+              <img src={p.images[0]} alt="" style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+            )}
+            {p.images.length > 1 && (
+              <div style={{position:'absolute',bottom:12,left:0,right:0,display:'flex',justifyContent:'center',gap:5}}>
+                {p.images.map((_,i)=>(
+                  <div key={i} style={{width:i===imgIdx?18:6,height:4,borderRadius:2,background:i===imgIdx?'white':'rgba(255,255,255,0.4)',transition:'all 0.2s'}}/>
+                ))}
+              </div>
+            )}
+          </>
+        ) : (
+          <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:80}}>{p.emoji||'📦'}</div>
+        )}
+      </div>
+
+      {/* Details */}
+      <div style={{padding:'16px',background:'#0d0d0d',borderTop:'1px solid rgba(255,255,255,0.07)',maxHeight:'35%',overflowY:'auto'}}>
+        {p.caption && <div style={{fontSize:15,color:'white',lineHeight:1.6,marginBottom:10}}>{p.caption}</div>}
+        {p.description && <div style={{fontSize:13,color:'rgba(255,255,255,0.65)',lineHeight:1.6,marginBottom:10}}>{p.description}</div>}
+        {p.price && <div style={{fontSize:20,fontWeight:900,color:'#FF3366',marginBottom:6}}>UGX {Number(p.price).toLocaleString()}</div>}
+        <div style={{display:'flex',flexWrap:'wrap',gap:8,marginTop:4}}>
+          {p.category && <span style={{fontSize:11,padding:'3px 10px',borderRadius:20,background:'rgba(255,255,255,0.07)',color:'rgba(255,255,255,0.5)',border:'1px solid rgba(255,255,255,0.1)'}}>{p.category}</span>}
+          {p.condition && <span style={{fontSize:11,padding:'3px 10px',borderRadius:20,background:'rgba(255,255,255,0.07)',color:'rgba(255,255,255,0.5)',border:'1px solid rgba(255,255,255,0.1)'}}>{p.condition}</span>}
+          {p.location && <span style={{fontSize:11,padding:'3px 10px',borderRadius:20,background:'rgba(255,255,255,0.07)',color:'rgba(255,255,255,0.5)',border:'1px solid rgba(255,255,255,0.1)'}}>📍 {p.location}</span>}
+        </div>
+        <div style={{height:20}}/>
+      </div>
+    </div>
+  )
+}
+
+// ── Follow List Modal ──────────────────────────────────────────────────────────
+function FollowListModal({ userId, type, onClose }) {
+  const [list, setList] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(()=>{
+    const load = async () => {
+      // type = 'followers' → who follows this user; 'following' → who this user follows
+      const col = type === 'followers' ? 'following_id' : 'follower_id'
+      const match = type === 'followers' ? 'following_id' : 'follower_id'
+      const select = type === 'followers' ? 'follower_id' : 'following_id'
+      const { data } = await supabase
+        .from('follows')
+        .select(`${select}, profile:profiles!${select}(id,full_name,username,avatar_url,verified)`)
+        .eq(match, userId)
+        .limit(100)
+      setList((data||[]).map(r=>r.profile).filter(Boolean))
+      setLoading(false)
+    }
+    load()
+  },[userId, type])
+
+  function avatarColorLocal(id=''){const C=['#7C3AED','#FF3366','#F97316','#22C55E','#3B82F6','#EC4899','#F59E0B','#06B6D4'];return C[id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%C.length]}
+
+  return (
+    <div style={{position:'fixed',inset:0,zIndex:400,background:'rgba(0,0,0,0.85)',backdropFilter:'blur(6px)',display:'flex',alignItems:'flex-end',fontFamily:"'Inter',sans-serif"}}>
+      <div style={{width:'100%',maxHeight:'75dvh',background:'#0d0d0d',borderRadius:'20px 20px 0 0',border:'1px solid rgba(255,255,255,0.07)',display:'flex',flexDirection:'column',overflow:'hidden'}}>
+        {/* Handle + header */}
+        <div style={{padding:'12px 16px 10px',borderBottom:'1px solid rgba(255,255,255,0.07)',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+          <div style={{width:36,height:4,borderRadius:2,background:'rgba(255,255,255,0.2)',margin:'0 auto'}}/>
+        </div>
+        <div style={{padding:'0 16px 10px',display:'flex',alignItems:'center',justifyContent:'space-between',flexShrink:0}}>
+          <div style={{fontSize:16,fontWeight:800,color:'white',textTransform:'capitalize'}}>{type}</div>
+          <button onClick={onClose} style={{background:'none',border:'none',cursor:'pointer',color:'rgba(255,255,255,0.5)',padding:4}}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+        </div>
+        {/* List */}
+        <div style={{flex:1,overflowY:'auto',padding:'0 16px 32px'}}>
+          {loading ? (
+            <div style={{display:'flex',justifyContent:'center',padding:32}}><div style={{width:22,height:22,border:'2px solid rgba(255,255,255,0.1)',borderTopColor:'#FF3366',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/></div>
+          ) : list.length === 0 ? (
+            <div style={{textAlign:'center',padding:'40px 0',color:'#52525B',fontSize:14}}>No {type} yet</div>
+          ) : list.map(u=>(
+            <div key={u.id} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 0',borderBottom:'1px solid rgba(255,255,255,0.05)'}}>
+              <div style={{width:44,height:44,borderRadius:'50%',background:avatarColorLocal(u.id),display:'flex',alignItems:'center',justifyContent:'center',fontSize:14,fontWeight:900,color:'white',flexShrink:0,overflow:'hidden'}}>
+                {u.avatar_url ? <img src={u.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : (u.full_name||u.username||'?')[0].toUpperCase()}
+              </div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:14,fontWeight:700,color:'white',display:'flex',alignItems:'center',gap:5}}>
+                  {u.full_name||u.username||'User'}
+                  {u.verified&&<span style={{width:13,height:13,borderRadius:'50%',background:'#3B82F6',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:7,color:'white',fontWeight:900}}>✓</span>}
+                </div>
+                {u.username&&<div style={{fontSize:12,color:'#71717A'}}>@{u.username}</div>}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
     </div>
   )
 }
