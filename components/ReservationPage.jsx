@@ -8,11 +8,19 @@ import { supabase } from '../lib/supabase'
 import { formatUGX } from '../lib/feed'
 
 export default function ReservationPage({ post, seller, currentUser, onBack, onConfirmed }) {
-  // Hide bottom nav while reservation page is open
+  // Hide bottom nav AND feed top nav while reservation page is open
   useEffect(() => {
-    const nav = document.querySelector('.bottom-nav')
-    if (nav) nav.style.display = 'none'
-    return () => { if (nav) nav.style.display = '' }
+    const bottomNav  = document.querySelector('.bottom-nav')
+    const feedTopNav = document.querySelector('.feed-top-nav')
+    const searchIcon = document.querySelector('.feed-search-icon')
+    if (bottomNav)  bottomNav.style.display  = 'none'
+    if (feedTopNav) feedTopNav.style.display  = 'none'
+    if (searchIcon) searchIcon.style.display  = 'none'
+    return () => {
+      if (bottomNav)  bottomNav.style.display  = ''
+      if (feedTopNav) feedTopNav.style.display  = ''
+      if (searchIcon) searchIcon.style.display  = ''
+    }
   }, [])
   const [paymentOption, setPaymentOption] = useState('full')   // 'full' | 'half'
   const [deliveryType,  setDeliveryType]  = useState('delivery') // 'pickup' | 'delivery'
@@ -57,8 +65,6 @@ export default function ReservationPage({ post, seller, currentUser, onBack, onC
           seller_id: post.seller_id,
           last_message: `🛍️ Reservation confirmed for ${post.title}`,
           last_at: new Date().toISOString(),
-          context_type: 'product',
-          context_id: post.id,
         }, { onConflict: 'post_id,buyer_id,seller_id' })
         .select().single()
 
@@ -227,7 +233,7 @@ export default function ReservationPage({ post, seller, currentUser, onBack, onC
       </div>
 
       {/* ── Confirm button ── */}
-      <div style={{ padding:'12px 16px', paddingBottom:'calc(var(--nav-h,50px) + env(safe-area-inset-bottom,0px) + 12px)', borderTop:'1px solid rgba(255,255,255,0.07)', background:'rgba(0,0,0,0.95)', backdropFilter:'blur(16px)', flexShrink:0 }}>
+      <div style={{ padding:'12px 16px', paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 12px)', borderTop:'1px solid rgba(255,255,255,0.07)', background:'rgba(0,0,0,0.95)', backdropFilter:'blur(16px)', flexShrink:0 }}>
         <button onClick={handleConfirm} disabled={loading} style={{ width:'100%', padding:'15px', background:loading?'#333':'linear-gradient(135deg,#FF3366,#FF6633)', border:'none', borderRadius:14, color:'white', fontSize:15, fontWeight:700, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:loading?'none':'0 4px 20px rgba(255,51,102,0.45)' }}>
           {loading ? (
             <><div style={{width:18,height:18,border:'2px solid rgba(255,255,255,0.3)',borderTopColor:'white',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/> Processing...</>
@@ -293,7 +299,7 @@ function PMOption({ value, selected, onSelect, label, sub, color, icon }) {
 }
 const S = {
   page:    { position:'fixed', inset:0, zIndex:9999, background:'#000', display:'flex', flexDirection:'column', fontFamily:"'Inter',sans-serif", color:'#fff' },
-  header:  { display:'flex', alignItems:'center', gap:12, padding:'12px 16px', paddingTop:'calc(env(safe-area-inset-top,0px) + 12px)', borderBottom:'1px solid rgba(255,255,255,0.07)', background:'rgba(0,0,0,0.95)', backdropFilter:'blur(16px)', flexShrink:0, position:'sticky', top:0, zIndex:10 },
+  header:  { display:'flex', alignItems:'center', gap:12, padding:'12px 16px', paddingTop:'calc(env(safe-area-inset-top,0px) + 12px)', borderBottom:'1px solid rgba(255,255,255,0.07)', background:'rgba(0,0,0,0.95)', backdropFilter:'blur(16px)', flexShrink:0 },
   backBtn: { width:36, height:36, borderRadius:'50%', background:'rgba(255,255,255,0.06)', border:'1px solid rgba(255,255,255,0.08)', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', flexShrink:0 },
   body:    { flex:1, overflowY:'auto', scrollbarWidth:'none', paddingTop:8 },
 }
