@@ -325,6 +325,7 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
 
 // ── Main FeedCard — routes by post_type ───────────────────────────────────────
 export default function FeedCard({ post: p, currentUser, initialLiked=false, initialSaved=false, distanceKm=null, onOpenComments, onChatSeller }) {
+  // ── All hooks must be declared unconditionally (Rules of Hooks) ────────────
   const [liked,       setLiked]       = useState(initialLiked)
   const [saved,       setSaved]       = useState(initialSaved)
   const [likes,       setLikes]       = useState(p.likes_count||0)
@@ -335,7 +336,11 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   const [showReserve, setShowReserve] = useState(false)
   const [showChat,    setShowChat]    = useState(false)
   const [conversation,setConversation]= useState(null)
-  const heartTimer = useRef(null)
+  const [muted,       setMuted]       = useState(true)
+  const [imgIdx,      setImgIdx]      = useState(0)
+  const heartTimer  = useRef(null)
+  const videoRef    = useRef(null)
+  const productRef  = useRef(null)
 
   const seller      = p.seller || {}
   const sellerColor = avatarColor(seller.id||'')
@@ -347,8 +352,32 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
 
   useEffect(()=>{setLiked(initialLiked)},[initialLiked])
   useEffect(()=>{setSaved(initialSaved)},[initialSaved])
-
   useEffect(()=>()=>clearTimeout(heartTimer.current),[])
+
+  // ── Product card video: play/pause, volume key unmute, scroll-away mute ──
+  const isProductVideo = p.post_type === 'product' && !!p.video_url
+  useEffect(() => {
+    const v = videoRef.current; if (!v) return
+    if (paused) v.pause(); else v.play().catch(()=>{})
+  }, [paused])
+
+  useEffect(()=>{
+    const v = videoRef.current; if (!v || !isProductVideo) return
+    const onVol = () => { if (!document.hidden){ v.muted=false; setMuted(false) } }
+    v.addEventListener('volumechange', onVol)
+    return () => v.removeEventListener('volumechange', onVol)
+  }, [isProductVideo])
+
+  useEffect(()=>{
+    const v = videoRef.current; const card = productRef.current
+    if (!v || !card || !isProductVideo) return
+    const obs = new IntersectionObserver(([e])=>{
+      if (e.isIntersecting){ v.play().catch(()=>{}); setPaused(false) }
+      else { v.pause(); v.muted=true; setMuted(true) }
+    }, { threshold:0.6 })
+    obs.observe(card)
+    return () => obs.disconnect()
+  }, [isProductVideo])
 
   const handleLike = async () => {
     if (!currentUser) return
@@ -422,37 +451,6 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   )
 
   // ── Product post (TikTok full-screen) ──────────────────────────────────
-  const videoRef   = useRef(null)
-  const productRef = useRef(null)
-  const [muted,    setMuted]    = useState(true)
-  const [imgIdx,   setImgIdx]   = useState(0)
-
-  // Play/pause control
-  useEffect(() => {
-    const v = videoRef.current; if (!v) return
-    if (paused) v.pause(); else v.play().catch(()=>{})
-  }, [paused])
-
-  // Volume key → unmute
-  useEffect(()=>{
-    const v = videoRef.current; if (!v) return
-    const onVol = () => { if (!document.hidden){ v.muted=false; setMuted(false) } }
-    v.addEventListener('volumechange', onVol)
-    return () => v.removeEventListener('volumechange', onVol)
-  }, [])
-
-  // Scroll away → pause + mute
-  useEffect(()=>{
-    const v = videoRef.current; const card = productRef.current
-    if (!v || !card) return
-    const obs = new IntersectionObserver(([e])=>{
-      if (e.isIntersecting){ v.play().catch(()=>{}); setPaused(false) }
-      else { v.pause(); v.muted=true; setMuted(true) }
-    }, { threshold:0.6 })
-    obs.observe(card)
-    return () => obs.disconnect()
-  }, [isVideo])
-
   const hasImages  = p.images?.length > 0
   const multiImage = hasImages && p.images.length > 1
   const isVideo    = !!p.video_url
