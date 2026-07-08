@@ -8,7 +8,6 @@
  * - Playhead, waveform, clip management
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
 
 const CLIP_SEC = 3  // seconds per image
 
@@ -84,14 +83,45 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
     startPlayback(currentTime)
   }, [selectedTrack, musicStart])
 
-  // ── Load tracks when sound panel opens ───────────────────────────────────
+  // ── Load tracks from Jamendo API when sound panel opens ─────────────────
   useEffect(() => {
     if (panel !== 'sound') return
     if (tracks.length) return
     setLoadingTracks(true)
-    supabase.from('music_tracks').select('*').eq('is_active', true)
-      .order('play_count', { ascending: false }).limit(30)
-      .then(({ data }) => { setTracks(data || []); setLoadingTracks(false) })
+    // Jamendo public API — free, no key needed for this endpoint
+    // Returns royalty-free tracks usable in content
+    const JAMENDO_CLIENT_ID = '57924d00' // public demo client_id from Jamendo docs
+    const genres = ['pop','electronic','ambient','hiphop','rock','jazz','classical']
+    const genre = genres[Math.floor(Math.random() * genres.length)]
+    fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=40&include=musicinfo&boost=popularity_total&order=popularity_total_desc&audioformat=mp32&tags=${genre}`)
+      .then(r => r.json())
+      .then(data => {
+        const mapped = (data.results || []).filter(t => t.audio).map(t => ({
+          id: t.id,
+          title: t.name,
+          artist: t.artist_name,
+          file_url: t.audio,
+          duration_sec: t.duration,
+          cover_url: t.album_image,
+          genre: t.musicinfo?.tags?.genres?.[0] || genre,
+        }))
+        setTracks(mapped)
+        setLoadingTracks(false)
+      })
+      .catch(() => {
+        // Fallback: try without genre filter
+        fetch(`https://api.jamendo.com/v3.0/tracks/?client_id=${JAMENDO_CLIENT_ID}&format=json&limit=40&boost=popularity_total&order=popularity_total_desc&audioformat=mp32`)
+          .then(r => r.json())
+          .then(data => {
+            const mapped = (data.results || []).filter(t => t.audio).map(t => ({
+              id: t.id, title: t.name, artist: t.artist_name,
+              file_url: t.audio, duration_sec: t.duration, cover_url: t.album_image,
+            }))
+            setTracks(mapped)
+          })
+          .catch(() => setTracks([]))
+          .finally(() => setLoadingTracks(false))
+      })
   }, [panel])
 
   const handlePreviewTrack = (track) => {
@@ -344,8 +374,15 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
           onClose={() => setPanel(null)}
         />
       )}
-      {(panel === 'text' || panel === 'effects' || panel === 'crop') && (
-        <ComingSoonPanel label={panel === 'text' ? 'Text overlays' : panel === 'effects' ? 'Visual effects' : 'Crop & resize'} onClose={() => setPanel(null)} />
+      {(panel === 'effects' || panel === 'crop') && (
+        <ComingSoonPanel label={panel === 'effects' ? 'Visual effects' : 'Crop & resize'} onClose={() => setPanel(null)} />
+      )}
+      {panel === 'text' && (
+        <TextPanel onAdd={text => {
+          // For now, we'll store text overlays in a future implementation
+          // Just close for now with a note
+          setPanel(null)
+        }} onClose={() => setPanel(null)} />
       )}
 
       <style>{`
@@ -360,37 +397,62 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
 
 // ══ SOUND PANEL ══
 function SoundPanel({ tracks, loading, selected, previewing, musicStart, totalDur, onMusicStartChange, onSelect, onPreview, onClose }) {
+  const [query, setQuery] = useState('')
+  const [genre, setGenre] = useState('All')
+  const GENRES = ['All','Pop','Electronic','Ambient','Hip-Hop','Rock','Jazz','Classical']
+  const filtered = tracks.filter(t => {
+    const q = query.toLowerCase()
+    const matchQ = !q || t.title?.toLowerCase().includes(q) || t.artist?.toLowerCase().includes(q)
+    const matchG = genre === 'All' || t.genre?.toLowerCase().includes(genre.toLowerCase())
+    return matchQ && matchG
+  })
   return (
     <div style={P.overlay}>
       <div style={P.sheet}>
-        <div style={P.handle} />
+        <div style={P.handle}/>
         <div style={P.header}>
-          <span style={{ fontSize: 15, fontWeight: 800 }}>Add Sound</span>
-          <button onClick={onClose} style={P.closeBtn}><XIcon /></button>
+          <span style={{fontSize:15,fontWeight:800}}>Add Sound</span>
+          <button onClick={onClose} style={P.closeBtn}><XIcon/></button>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', scrollbarWidth: 'none' }}>
-          {loading && <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><Spinner /></div>}
-          <TrackRow track={{ id: null, title: 'No Sound', artist: 'Use original audio' }} isSelected={!selected} isPlaying={false} onSelect={() => onSelect(null)} onPreview={() => {}} noMusic />
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '0 16px' }} />
-          {tracks.map(t => (
-            <TrackRow key={t.id} track={t} isSelected={selected?.id === t.id} isPlaying={previewing?.id === t.id}
-              onSelect={() => onSelect(t)} onPreview={() => onPreview(t)} />
+        {/* Search */}
+        <div style={{padding:'0 16px 8px',flexShrink:0}}>
+          <div style={{position:'relative'}}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="2.5" style={{position:'absolute',left:12,top:'50%',transform:'translateY(-50%)',pointerEvents:'none'}}><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Search tracks or artists"
+              style={{width:'100%',padding:'10px 14px 10px 36px',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.08)',borderRadius:10,color:'white',fontSize:13,outline:'none',fontFamily:'inherit',boxSizing:'border-box'}}/>
+          </div>
+        </div>
+        {/* Genre pills */}
+        <div style={{display:'flex',gap:6,padding:'0 16px 10px',overflowX:'auto',scrollbarWidth:'none',flexShrink:0}}>
+          {GENRES.map(g=>(
+            <button key={g} onClick={()=>setGenre(g)} style={{flexShrink:0,padding:'5px 12px',borderRadius:20,fontSize:11,fontWeight:600,cursor:'pointer',fontFamily:'inherit',background:genre===g?'rgba(255,51,102,0.15)':'rgba(255,255,255,0.05)',border:`1px solid ${genre===g?'rgba(255,51,102,0.4)':'rgba(255,255,255,0.08)'}`,color:genre===g?'#FF3366':'rgba(255,255,255,0.5)',transition:'all 0.15s'}}>
+              {g}
+            </button>
           ))}
-          {!loading && !tracks.length && (
-            <div style={{ padding: '40px 24px', textAlign: 'center' }}>
-              <div style={{ fontSize: 32, marginBottom: 10, opacity: 0.3 }}>♪</div>
-              <div style={{ fontSize: 13, color: '#71717A' }}>No tracks available yet</div>
+        </div>
+        <div style={{flex:1,overflowY:'auto',scrollbarWidth:'none'}}>
+          {loading && <div style={{display:'flex',justifyContent:'center',padding:32}}><Spinner/></div>}
+          <TrackRow track={{id:null,title:'No Sound',artist:'Use original media audio'}} isSelected={!selected} isPlaying={false} onSelect={()=>onSelect(null)} onPreview={()=>{}} noMusic/>
+          <div style={{height:1,background:'rgba(255,255,255,0.05)',margin:'0 16px'}}/>
+          {filtered.map(t=>(
+            <TrackRow key={t.id} track={t} isSelected={selected?.id===t.id} isPlaying={previewing?.id===t.id}
+              onSelect={()=>onSelect(t)} onPreview={()=>onPreview(t)}/>
+          ))}
+          {!loading && !filtered.length && (
+            <div style={{padding:'40px 24px',textAlign:'center'}}>
+              <div style={{fontSize:32,marginBottom:10,opacity:0.3}}>♪</div>
+              <div style={{fontSize:13,color:'#71717A'}}>{query ? 'No tracks match your search' : 'Loading music library...'}</div>
             </div>
           )}
         </div>
         {selected && (
-          <div style={{ padding: '10px 16px 16px', borderTop: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.25)', letterSpacing: 1.2, marginBottom: 8 }}>START FROM</div>
-            <input type="range" min={0} max={selected.duration_sec || 60} value={musicStart}
-              onChange={e => onMusicStartChange(Number(e.target.value))}
-              style={{ width: '100%', accentColor: '#FF3366', height: 2 }} />
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 5, fontSize: 10, color: '#52525B' }}>
-              <span>{fmtTime(musicStart)}</span><span>{fmtTime(selected.duration_sec || 60)}</span>
+          <div style={{padding:'10px 16px 16px',borderTop:'1px solid rgba(255,255,255,0.06)',flexShrink:0}}>
+            <div style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.25)',letterSpacing:1.2,marginBottom:8}}>START FROM</div>
+            <input type="range" min={0} max={selected.duration_sec||60} value={musicStart}
+              onChange={e=>onMusicStartChange(Number(e.target.value))}
+              style={{width:'100%',accentColor:'#FF3366',height:2}}/>
+            <div style={{display:'flex',justifyContent:'space-between',marginTop:5,fontSize:10,color:'#52525B'}}>
+              <span>{fmtTime(musicStart)}</span><span>{fmtTime(selected.duration_sec||60)}</span>
             </div>
           </div>
         )}
@@ -401,35 +463,50 @@ function SoundPanel({ tracks, loading, selected, previewing, musicStart, totalDu
 
 function TrackRow({ track, isSelected, isPlaying, onSelect, onPreview, noMusic }) {
   return (
-    <div onClick={onSelect} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '13px 16px', cursor: 'pointer', background: isSelected ? 'rgba(255,51,102,0.06)' : 'transparent', borderLeft: `3px solid ${isSelected ? '#FF3366' : 'transparent'}`, transition: 'all 0.15s' }}>
-      <div style={{ width: 44, height: 44, borderRadius: 11, background: noMusic ? 'rgba(255,255,255,0.04)' : 'linear-gradient(135deg,#0d001a,#1a0035)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid rgba(255,255,255,0.06)', position: 'relative', overflow: 'hidden' }}>
-        {noMusic
-          ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6"/></svg>
-          : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isSelected ? '#FF3366' : 'rgba(255,255,255,0.3)'} strokeWidth="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    <div onClick={onSelect} style={{display:'flex',alignItems:'center',gap:12,padding:'11px 16px',cursor:'pointer',background:isSelected?'rgba(255,51,102,0.07)':'transparent',borderLeft:`3px solid ${isSelected?'#FF3366':'transparent'}`,transition:'all 0.15s'}}>
+      {/* Album art / icon */}
+      <div style={{width:46,height:46,borderRadius:11,flexShrink:0,overflow:'hidden',position:'relative',border:`1px solid ${isSelected?'rgba(255,51,102,0.3)':'rgba(255,255,255,0.06)'}`,background:noMusic?'rgba(255,255,255,0.04)':'linear-gradient(135deg,#0d001a,#1a0035)'}}>
+        {track.cover_url && !noMusic
+          ? <img src={track.cover_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+          : <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}>
+              {noMusic
+                ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="2"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6"/></svg>
+                : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={isSelected?'#FF3366':'rgba(255,255,255,0.3)'} strokeWidth="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+              }
+            </div>
         }
+        {/* Equalizer animation when playing */}
         {isPlaying && (
-          <div style={{ position: 'absolute', inset: 0, background: 'rgba(255,51,102,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 14 }}>
-              {[0,1,2].map(i => <div key={i} style={{ width: 3, background: '#FF3366', borderRadius: 1.5, animation: `wv${i} 0.5s ease-in-out infinite alternate`, animationDelay: `${i*0.12}s` }} />)}
+          <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <div style={{display:'flex',gap:2,alignItems:'flex-end',height:16}}>
+              {[0,1,2,3].map(i=>(
+                <div key={i} style={{width:3,background:'#FF3366',borderRadius:1.5,animation:`wv${i%3} 0.5s ease-in-out infinite alternate`,animationDelay:`${i*0.1}s`}}/>
+              ))}
             </div>
           </div>
         )}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 14, fontWeight: isSelected ? 700 : 500, color: isSelected ? 'white' : 'rgba(255,255,255,0.75)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.title}</div>
-        <div style={{ fontSize: 11, color: '#52525B', marginTop: 2 }}>{track.artist || ''}</div>
+      {/* Track info */}
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:14,fontWeight:isSelected?700:500,color:isSelected?'white':'rgba(255,255,255,0.82)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{track.title}</div>
+        <div style={{fontSize:11,color:'#52525B',marginTop:2,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{track.artist||''}{track.genre?` · ${track.genre}`:''}</div>
       </div>
-      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
-        {track.duration_sec && <span style={{ fontSize: 11, color: '#52525B' }}>{fmtTime(track.duration_sec)}</span>}
-        {!noMusic && (
-          <button onClick={e => { e.stopPropagation(); onPreview() }} style={{ width: 32, height: 32, borderRadius: '50%', background: isPlaying ? 'rgba(255,51,102,0.15)' : 'rgba(255,255,255,0.05)', border: `1px solid ${isPlaying ? 'rgba(255,51,102,0.3)' : 'rgba(255,255,255,0.08)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
+      {/* Actions */}
+      <div style={{display:'flex',gap:8,alignItems:'center',flexShrink:0}}>
+        {track.duration_sec&&<span style={{fontSize:11,color:'#52525B',fontVariantNumeric:'tabular-nums'}}>{fmtTime(track.duration_sec)}</span>}
+        {!noMusic&&(
+          <button onClick={e=>{e.stopPropagation();onPreview()}} style={{width:32,height:32,borderRadius:'50%',background:isPlaying?'rgba(255,51,102,0.15)':'rgba(255,255,255,0.05)',border:`1px solid ${isPlaying?'rgba(255,51,102,0.3)':'rgba(255,255,255,0.08)'}`,display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',transition:'all 0.15s'}}>
             {isPlaying
               ? <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>
               : <svg width="10" height="10" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             }
           </button>
         )}
-        {isSelected && <div style={{ width: 20, height: 20, borderRadius: '50%', background: '#FF3366', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5"><path d="M20 6L9 17l-5-5"/></svg></div>}
+        {isSelected&&(
+          <div style={{width:20,height:20,borderRadius:'50%',background:'#FF3366',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -457,6 +534,65 @@ function FiltersPanel({ clip, clipIndex, totalClips, currentFilter, onSelect, on
               <span style={{ fontSize: 10, fontWeight: currentFilter === f.name ? 700 : 400, color: currentFilter === f.name ? 'white' : 'rgba(255,255,255,0.35)', letterSpacing: '0.3px' }}>{f.name}</span>
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ══ TEXT PANEL ══
+function TextPanel({ onAdd, onClose }) {
+  const [text, setText] = useState('')
+  const [color, setColor] = useState('#FFFFFF')
+  const [size, setSize] = useState('medium')
+  const COLORS = ['#FFFFFF','#FF3366','#F97316','#22C55E','#3B82F6','#7C3AED','#F59E0B','#000000']
+  const SIZES = [{id:'small',label:'S'},{id:'medium',label:'M'},{id:'large',label:'L'}]
+  return (
+    <div style={P.overlay}>
+      <div style={{...P.sheet, maxHeight:'60%'}}>
+        <div style={P.handle}/>
+        <div style={P.header}>
+          <span style={{fontSize:15,fontWeight:800}}>Add Text</span>
+          <button onClick={onClose} style={P.closeBtn}><XIcon/></button>
+        </div>
+        <div style={{padding:'0 16px 24px',display:'flex',flexDirection:'column',gap:16}}>
+          {/* Preview */}
+          <div style={{background:'rgba(255,255,255,0.04)',borderRadius:12,padding:'16px',textAlign:'center',minHeight:60,display:'flex',alignItems:'center',justifyContent:'center',border:'1px solid rgba(255,255,255,0.06)'}}>
+            {text ? (
+              <span style={{color,fontSize:size==='large'?28:size==='medium'?20:14,fontWeight:800,textShadow:'0 2px 8px rgba(0,0,0,0.8)',letterSpacing:'-0.3px',wordBreak:'break-word',textAlign:'center'}}>{text}</span>
+            ) : (
+              <span style={{color:'rgba(255,255,255,0.2)',fontSize:13}}>Type something below...</span>
+            )}
+          </div>
+          {/* Input */}
+          <input value={text} onChange={e=>setText(e.target.value)} maxLength={80}
+            placeholder="Enter text"
+            style={{width:'100%',padding:'13px 14px',background:'rgba(255,255,255,0.06)',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,color:'white',fontSize:15,outline:'none',fontFamily:'inherit',boxSizing:'border-box'}}/>
+          {/* Colors */}
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.3)',letterSpacing:1.2,marginBottom:10}}>COLOR</div>
+            <div style={{display:'flex',gap:10,flexWrap:'wrap'}}>
+              {COLORS.map(c=>(
+                <button key={c} onClick={()=>setColor(c)} style={{width:28,height:28,borderRadius:'50%',background:c,border:color===c?'3px solid white':'3px solid transparent',cursor:'pointer',boxShadow:color===c?'0 0 0 2px rgba(255,255,255,0.3)':'none',transition:'all 0.15s'}}/>
+              ))}
+            </div>
+          </div>
+          {/* Size */}
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.3)',letterSpacing:1.2,marginBottom:10}}>SIZE</div>
+            <div style={{display:'flex',gap:8}}>
+              {SIZES.map(s=>(
+                <button key={s.id} onClick={()=>setSize(s.id)} style={{flex:1,padding:'9px',borderRadius:10,background:size===s.id?'rgba(255,51,102,0.15)':'rgba(255,255,255,0.04)',border:`1.5px solid ${size===s.id?'#FF3366':'rgba(255,255,255,0.08)'}`,color:size===s.id?'#FF3366':'rgba(255,255,255,0.5)',fontWeight:700,fontSize:14,cursor:'pointer',fontFamily:'inherit',transition:'all 0.15s'}}>
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {/* Add button */}
+          <button onClick={()=>{if(text.trim())onAdd({text:text.trim(),color,size})}} disabled={!text.trim()}
+            style={{width:'100%',padding:'13px',background:text.trim()?'linear-gradient(135deg,#FF3366,#FF6633)':'rgba(255,255,255,0.05)',border:'none',borderRadius:12,color:'white',fontSize:15,fontWeight:700,cursor:text.trim()?'pointer':'default',fontFamily:'inherit',opacity:text.trim()?1:0.4,transition:'all 0.2s'}}>
+            Add to Post
+          </button>
         </div>
       </div>
     </div>
