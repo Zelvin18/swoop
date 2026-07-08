@@ -5,6 +5,25 @@ import ChatScreen      from './ChatScreen'
 
 // ── Deterministic avatar colour ───────────────────────────────────────────────
 function avatarColor(id=''){const C=['#7C3AED','#FF3366','#F97316','#22C55E','#3B82F6','#EC4899','#F59E0B','#06B6D4'];return C[id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%C.length]}
+// Uses MediaSession API + document interaction fallback (same as IG/TikTok)
+let globalMuteCallbacks = []
+function registerVideoForUnmute(cb) {
+  globalMuteCallbacks.push(cb)
+  return () => { globalMuteCallbacks = globalMuteCallbacks.filter(f => f !== cb) }
+}
+if (typeof window !== 'undefined') {
+  // MediaSession volume key handler
+  if ('mediaSession' in navigator) {
+    try {
+      navigator.mediaSession.setActionHandler('seekforward', null)
+      navigator.mediaSession.setActionHandler('seekbackward', null)
+    } catch(_) {}
+  }
+  // Global document volumechange — some browsers surface this at document level
+  document.addEventListener('volumechange', () => {
+    globalMuteCallbacks.forEach(cb => cb())
+  }, true)
+}
 
 // ── Social post — full-screen Instagram Reels style ───────────────────────────
 function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike, onSave, onShare, onComment, onDoubleTap }) {
@@ -22,12 +41,23 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
     if (paused) v.pause(); else v.play().catch(()=>{})
   }, [paused])
 
-  // Volume key → unmute (user raising volume signals intent to hear audio)
+  // Volume key → unmute via global manager + video volumechange
   useEffect(() => {
     const v = videoRef.current; if (!v) return
-    const onVolume = () => { if (!document.hidden) { v.muted = false; setMuted(false) } }
-    v.addEventListener('volumechange', onVolume)
-    return () => v.removeEventListener('volumechange', onVolume)
+    // Register for global unmute (volume up button)
+    const unregister = registerVideoForUnmute(() => {
+      if (document.hidden) return
+      // Only unmute the video that is currently most visible
+      const card = cardRef.current
+      if (!card) return
+      const rect = card.getBoundingClientRect()
+      const visible = rect.top >= -rect.height * 0.4 && rect.top <= window.innerHeight * 0.6
+      if (visible) { v.muted = false; setMuted(false) }
+    })
+    // Also listen directly on the video element
+    const onVolChange = () => { if (!document.hidden && !v.muted) setMuted(false) }
+    v.addEventListener('volumechange', onVolChange)
+    return () => { unregister(); v.removeEventListener('volumechange', onVolChange) }
   }, [])
 
   // IntersectionObserver — pause + mute when scrolled away
@@ -43,7 +73,10 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
   }, [isVideo])
 
   return (
-    <div ref={cardRef} className="feed-card" onDoubleClick={onDoubleTap} style={{position:'relative'}}>
+    <div ref={cardRef} className="feed-card" onDoubleClick={onDoubleTap}
+      style={{position:'relative'}}
+      onClick={()=>{ if(muted && isVideo){ const v=videoRef.current; if(v){v.muted=false;setMuted(false)} } }}
+    >
       {/* ── Full-screen media ── */}
       {isVideo ? (
         <video ref={videoRef} src={p.video_url}
@@ -182,12 +215,19 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
     if (paused) v.pause(); else v.play().catch(()=>{})
   }, [paused])
 
-  // Volume key → unmute
+  // Volume key → unmute via global manager
   useEffect(()=>{
     const v = videoRef.current; if (!v) return
-    const onVol = () => { if (!document.hidden) { v.muted=false; setMuted(false) } }
-    v.addEventListener('volumechange', onVol)
-    return () => v.removeEventListener('volumechange', onVol)
+    const unregister = registerVideoForUnmute(() => {
+      if (document.hidden) return
+      const card = cardRef.current; if (!card) return
+      const rect = card.getBoundingClientRect()
+      const visible = rect.top >= -rect.height * 0.4 && rect.top <= window.innerHeight * 0.6
+      if (visible) { v.muted=false; setMuted(false) }
+    })
+    const onVolChange = () => { if (!document.hidden && !v.muted) setMuted(false) }
+    v.addEventListener('volumechange', onVolChange)
+    return () => { unregister(); v.removeEventListener('volumechange', onVolChange) }
   }, [])
 
   // Scroll away → pause + mute
@@ -367,9 +407,16 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
 
   useEffect(()=>{
     const v = videoRef.current; if (!v || !isProductVideo) return
-    const onVol = () => { if (!document.hidden){ v.muted=false; setMuted(false) } }
-    v.addEventListener('volumechange', onVol)
-    return () => v.removeEventListener('volumechange', onVol)
+    const unregister = registerVideoForUnmute(() => {
+      if (document.hidden) return
+      const card = productRef.current; if (!card) return
+      const rect = card.getBoundingClientRect()
+      const visible = rect.top >= -rect.height * 0.4 && rect.top <= window.innerHeight * 0.6
+      if (visible) { v.muted=false; setMuted(false) }
+    })
+    const onVolChange = () => { if (!document.hidden && !v.muted) setMuted(false) }
+    v.addEventListener('volumechange', onVolChange)
+    return () => { unregister(); v.removeEventListener('volumechange', onVolChange) }
   }, [isProductVideo])
 
   useEffect(()=>{
@@ -472,7 +519,10 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   const isVideo    = !!p.video_url
 
   return (
-    <div ref={productRef} className={`feed-card${paused?' paused':''}`} onDoubleClick={handleDoubleTap}>
+    <div ref={productRef} className={`feed-card${paused?' paused':''}`}
+      onDoubleClick={handleDoubleTap}
+      onClick={()=>{ if(muted && isVideo){ const v=videoRef.current; if(v){v.muted=false;setMuted(false)} } }}
+    >
       {/* Background — video > images > color/emoji */}
       {isVideo ? (
         <video
@@ -484,7 +534,10 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
           muted={muted}
           loop
           playsInline
-          onClick={()=>setPaused(x=>!x)}
+          onClick={e=>{
+            if (muted) { e.currentTarget.muted=false; setMuted(false) }
+            else setPaused(x=>!x)
+          }}
         />
       ) : hasImages ? (
         multiImage ? (
@@ -565,7 +618,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
       )}
 
       {/* Right actions — transparent, no avatar circle, consistent icon order */}
-      <div className="feed-actions">
+      <div className="feed-actions" onClick={e=>e.stopPropagation()}>
         <RightAction onClick={handleLike} count={fmtCount(likes)} active={liked} activeColor="#FF3366">
           <svg width="28" height="28" viewBox="0 0 24 24" fill={liked?'#FF3366':'none'} stroke={liked?'#FF3366':'white'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 8px rgba(0,0,0,1))'}}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
         </RightAction>
@@ -581,7 +634,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
       </div>
 
       {/* Bottom info */}
-      <div className="feed-info">
+      <div className="feed-info" onClick={e=>e.stopPropagation()}>
         {distanceKm===null&&(
           <div className="feed-seller-row">
             <div className="feed-seller-av" style={{background:sellerColor,overflow:'hidden'}}>
@@ -594,7 +647,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
               {seller?.full_name||seller?.username||'Seller'}
               {seller?.verified&&<span className="feed-verified">✓</span>}
             </span>
-            <button className="feed-follow-btn" onClick={handleFollow}>
+            <button className="feed-follow-btn" onClick={e=>{e.stopPropagation();handleFollow()}}>
               {following ? 'Following' : 'Follow'}
             </button>
           </div>
