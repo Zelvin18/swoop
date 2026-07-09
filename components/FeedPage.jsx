@@ -11,7 +11,7 @@ import {
 // localStorage key so we only ask once
 const LOC_KEY = 'swoop_location_asked'
 
-export default function FeedPage({ showToast, onTabChange, currentUser }) {
+export default function FeedPage({ showToast, onTabChange, currentUser, refreshToken = 0 }) {
   const containerRef = useRef(null)
 
   const [activeTab,    setActiveTab]    = useState('For You')
@@ -104,6 +104,14 @@ export default function FeedPage({ showToast, onTabChange, currentUser }) {
     setPage(0); setHasMore(true)
     loadPosts(true)
   }, [activeCat, activeTab, locStatus])
+
+  // Reload feed after a new post is published
+  useEffect(() => {
+    if (refreshToken > 0) {
+      setPage(0); setHasMore(true)
+      loadPosts(true)
+    }
+  }, [refreshToken])
 
   // Re-load when location granted
   useEffect(() => {
@@ -237,7 +245,6 @@ export default function FeedPage({ showToast, onTabChange, currentUser }) {
             initialSaved={postStates[p.id]?.saved || false}
             distanceKm={p._distanceKm ?? null}
             onOpenComments={post => setCommentPost(post)}
-            onChatSeller={() => showToast('💬 Chat coming soon...')}
           />
         ))}
 

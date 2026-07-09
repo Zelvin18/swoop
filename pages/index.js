@@ -13,7 +13,8 @@ import { supabase } from '../lib/supabase'
 export default function Home() {
   const router = useRouter()
   const [activeTab, setActiveTab]     = useState('home')
-  const [showAddPost, setShowAddPost] = useState(false)
+  const [showAddPost, setShowAddPost]   = useState(false)
+  const [feedRefresh, setFeedRefresh]   = useState(0)
   const [toast, setToast]             = useState({ show:false, msg:'' })
   const [user, setUser]               = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
@@ -95,7 +96,7 @@ export default function Home() {
 
         {/* Screens */}
         <div className={`screen screen-feed ${activeTab==='home'?'active':''}`}>
-          <FeedPage showToast={showToast} onTabChange={handleNav} currentUser={user} />
+          <FeedPage showToast={showToast} onTabChange={handleNav} currentUser={user} refreshToken={feedRefresh} />
         </div>
 
         <div className={`screen ${activeTab==='live'?'active':''}`} style={{background:'#000'}}>
@@ -151,7 +152,12 @@ export default function Home() {
 
         {/* Add Post Modal */}
         {showAddPost && (
-          <AddPostModal onClose={() => setShowAddPost(false)} showToast={showToast} currentUser={user} />
+          <AddPostModal
+            onClose={() => setShowAddPost(false)}
+            showToast={showToast}
+            currentUser={user}
+            onPosted={() => { setFeedRefresh(n => n + 1); setActiveTab('home') }}
+          />
         )}
 
         {/* Toast */}

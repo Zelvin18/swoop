@@ -6,6 +6,7 @@
  */
 import { useState, useRef } from 'react'
 import { createPost, saveDraft, CATEGORIES, CATEGORY_EMOJI } from '../lib/feed'
+import { editorMeta } from '../lib/postEditorMeta'
 import MediaEditor from './MediaEditor'
 
 const CONDITIONS = ['Brand New','Like New','Good Condition','Fair Condition']
@@ -33,7 +34,7 @@ function FieldLabel({ children, right }) {
   )
 }
 
-export default function AddPostModal({ onClose, showToast, currentUser }) {
+export default function AddPostModal({ onClose, showToast, currentUser, onPosted }) {
   const [postType,     setPostType]     = useState(null)   // null | 'social' | 'product' | 'service'
   const [step,         setStep]         = useState('type') // 'type' | 'media' | 'editing' | 'details'
   const [mediaFiles,   setMediaFiles]   = useState([])
@@ -97,15 +98,16 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
     if (!currentUser) { showToast('Sign in to post'); return }
     setPosting(true)
     let post = null
+    const meta = editorMeta(editorResult)
     try {
       if (postType === 'social') {
         post = await createPost({
           sellerId: currentUser.id, postType: 'social',
           caption: caption.trim(),
           title: caption.trim().slice(0,60) || 'Social post',
+          location: location.trim() || null,
           mediaFiles,
-          filterName: editorResult?.filter || 'Original',
-          musicTrackId: editorResult?.selectedTrack?.id || null,
+          ...meta,
         })
       } else if (postType === 'product') {
         post = await createPost({
@@ -120,8 +122,7 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
           isHot,
           emoji: CATEGORY_EMOJI[category] || '📦',
           mediaFiles,
-          filterName: editorResult?.filter || 'Original',
-          musicTrackId: editorResult?.selectedTrack?.id || null,
+          ...meta,
         })
       } else if (postType === 'service') {
         post = await createPost({
@@ -134,7 +135,7 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
           serviceDuration,
           emoji: '🛠️',
           mediaFiles,
-          filterName: editorResult?.filter || 'Original',
+          ...meta,
         })
       }
     } catch (err) {
@@ -144,7 +145,7 @@ export default function AddPostModal({ onClose, showToast, currentUser }) {
       return
     }
     setPosting(false)
-    if (post) { showToast('Post published! 🎉'); onClose() }
+    if (post) { showToast('Post published! 🎉'); onPosted?.(post); onClose() }
     else showToast('Failed to post — run fix-schema.sql in Supabase first.')
   }
 

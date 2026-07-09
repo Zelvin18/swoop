@@ -3,25 +3,11 @@
  * Matches the UI design: product card, location, payment options,
  * delivery, address, payment method, confirm button
  */
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatUGX } from '../lib/feed'
 
 export default function ReservationPage({ post, seller, currentUser, onBack, onConfirmed }) {
-  // Hide bottom nav AND feed top nav while reservation page is open
-  useEffect(() => {
-    const bottomNav  = document.querySelector('.bottom-nav')
-    const feedTopNav = document.querySelector('.feed-top-nav')
-    const searchIcon = document.querySelector('.feed-search-icon')
-    if (bottomNav)  bottomNav.style.display  = 'none'
-    if (feedTopNav) feedTopNav.style.display  = 'none'
-    if (searchIcon) searchIcon.style.display  = 'none'
-    return () => {
-      if (bottomNav)  bottomNav.style.display  = ''
-      if (feedTopNav) feedTopNav.style.display  = ''
-      if (searchIcon) searchIcon.style.display  = ''
-    }
-  }, [])
   const [paymentOption, setPaymentOption] = useState('full')   // 'full' | 'half'
   const [deliveryType,  setDeliveryType]  = useState('delivery') // 'pickup' | 'delivery'
   const [payMethod,     setPayMethod]     = useState('momo')    // 'momo' | 'airtel' | 'card'

@@ -1,9 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { formatUGX, discountPct, fmtCount, fmtDistance, likePost, unlikePost, savePost, unsavePost, sharePost, recordView } from '../lib/feed'
+import { formatUGX, discountPct, fmtDistance, likePost, unlikePost, savePost, unsavePost, sharePost } from '../lib/feed'
+import { getFilterCSS } from '../lib/mediaFilters'
 import { supabase } from '../lib/supabase'
 import ReservationPage    from './ReservationPage'
 import ChatScreen         from './ChatScreen'
 import UserProfileView    from './UserProfileView'
+import FeedActionRail, { FeedSellerRow, FeedMusicPill } from './FeedActions'
+import OverlayPortal      from './OverlayPortal'
 
 // ── Deterministic avatar colour ───────────────────────────────────────────────
 function avatarColor(id=''){const C=['#7C3AED','#FF3366','#F97316','#22C55E','#3B82F6','#EC4899','#F59E0B','#06B6D4'];return C[id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%C.length]}
@@ -28,9 +31,10 @@ if (typeof window !== 'undefined') {
 }
 
 // ── Social post — full-screen Instagram Reels style ───────────────────────────
-function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike, onSave, onShare, onComment, onDoubleTap, onSellerTap }) {
+function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike, onSave, onShare, onComment, onDoubleTap, onSellerTap, following, followLoading, onFollow, canFollow }) {
   const isVideo   = !!p.video_url
   const hasImages = p.images?.length > 0
+  const filterCSS = getFilterCSS(p.filter_name)
   const [imgIdx,  setImgIdx]  = useState(0)
   const [paused,  setPaused]  = useState(false)
   const [muted,   setMuted]   = useState(true)
@@ -82,7 +86,7 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
       {/* ── Full-screen media ── */}
       {isVideo ? (
         <video ref={videoRef} src={p.video_url}
-          className="feed-media-bg" style={{objectFit:'cover',width:'100%',height:'100%'}}
+          className="feed-media-bg" style={{objectFit:'cover',width:'100%',height:'100%',filter:filterCSS||undefined}}
           autoPlay muted={muted} loop playsInline
           onClick={()=>setPaused(x=>!x)}/>
       ) : hasImages ? (
@@ -92,11 +96,11 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
               style={{display:'flex',overflowX:'auto',scrollSnapType:'x mandatory',scrollbarWidth:'none'}}
               onScroll={e=>setImgIdx(Math.round(e.currentTarget.scrollLeft/e.currentTarget.offsetWidth))}>
               {p.images.map((src,i)=>(
-                <img key={i} src={src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',flexShrink:0,scrollSnapAlign:'start'}}/>
+                <img key={i} src={src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',flexShrink:0,scrollSnapAlign:'start',filter:filterCSS||undefined}}/>
               ))}
             </div>
           ) : (
-            <img src={p.images[0]} alt="" className="feed-media-bg" style={{objectFit:'cover',width:'100%',height:'100%'}}/>
+            <img src={p.images[0]} alt="" className="feed-media-bg" style={{objectFit:'cover',width:'100%',height:'100%',filter:filterCSS||undefined}}/>
           )}
           {p.images.length > 1 && <>
             <div style={{position:'absolute',top:10,right:10,background:'rgba(0,0,0,0.55)',borderRadius:20,padding:'3px 8px',fontSize:11,fontWeight:700,color:'white',zIndex:16}}>{imgIdx+1}/{p.images.length}</div>
@@ -133,78 +137,32 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
         </button>
       )}
 
-      {/* ── Right side action strip — transparent icons, NO avatar above icons ── */}
-      <div style={{position:'absolute',right:10,bottom:'calc(var(--nav-h,50px) + var(--safe-bottom,0px) + 80px)',display:'flex',flexDirection:'column',alignItems:'center',gap:18,zIndex:20}}>
-        <RightAction onClick={onLike} count={fmtCount(likes)} active={liked} activeColor="#FF3366">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill={liked?'#FF3366':'none'} stroke={liked?'#FF3366':'white'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 6px rgba(0,0,0,0.9))'}}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-        </RightAction>
-        <RightAction onClick={onComment} count={fmtCount(p.comments_count||0)}>
-          <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 6px rgba(0,0,0,0.9))'}}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        </RightAction>
-        <RightAction onClick={onShare}>
-          <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 6px rgba(0,0,0,0.9))'}}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </RightAction>
-        <RightAction onClick={onSave} active={saved} activeColor="#FF3366">
-          <svg width="24" height="28" viewBox="0 0 24 24" fill={saved?'#FF3366':'none'} stroke={saved?'#FF3366':'white'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 6px rgba(0,0,0,0.9))'}}><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
-        </RightAction>
-      </div>
+      <FeedActionRail
+        liked={liked} likes={likes} comments={p.comments_count||0}
+        saved={saved} saves={saves}
+        onLike={onLike} onComment={onComment} onShare={onShare} onSave={onSave}
+      />
 
       {/* ── Bottom info ── */}
-      <div style={{position:'absolute',left:0,right:0,bottom:'calc(var(--nav-h,50px) + var(--safe-bottom,0px))',zIndex:20,padding:'0 14px 14px 14px',paddingRight:68}}>
-        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
-          <div onClick={onSellerTap} style={{width:32,height:32,borderRadius:'50%',background:sellerColor,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:900,color:'white',flexShrink:0,boxShadow:'0 1px 6px rgba(0,0,0,0.5)',overflow:'hidden',border:'1.5px solid rgba(255,255,255,0.6)',cursor:'pointer'}}>
-            {seller?.avatar_url
-              ? <img src={seller.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-              : sellerInitial
-            }
-          </div>
-          <span onClick={onSellerTap} style={{fontSize:13,fontWeight:700,color:'white',textShadow:'0 1px 4px rgba(0,0,0,0.9)',cursor:'pointer'}}>{seller?.full_name||seller?.username||'User'}</span>
-          {seller?.verified&&<span style={{width:14,height:14,borderRadius:'50%',background:'#3B82F6',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:7,color:'white',fontWeight:900,flexShrink:0}}>✓</span>}
-        </div>
+      <div className="feed-info">
+        <FeedSellerRow
+          seller={seller} sellerColor={sellerColor} sellerInitial={sellerInitial}
+          following={following} followLoading={followLoading} onFollow={onFollow}
+          onSellerTap={onSellerTap} showFollow={canFollow}
+        />
         {p.caption && <div style={{fontSize:14,color:'rgba(255,255,255,0.92)',lineHeight:1.5,textShadow:'0 1px 4px rgba(0,0,0,0.8)',marginBottom:5,display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{p.caption}</div>}
+        {(p.music_title || p.music_artist) && <FeedMusicPill title={p.music_title} artist={p.music_artist} />}
         {p.location && <div style={{fontSize:11,color:'rgba(255,255,255,0.5)',display:'flex',alignItems:'center',gap:4,marginTop:3}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>{p.location}</div>}
       </div>
     </div>
   )
 }
 
-// ── Inline action button (used by SocialCard bottom row) ─────────────────────
-function ActionBtn({ icon, active, activeColor='#FF3366', count, onClick }) {
-  return (
-    <div onClick={onClick} style={{display:'flex',alignItems:'center',gap:5,cursor:'pointer'}}>
-      <i className={`fas ${icon}`} style={{fontSize:22,color:active?activeColor:'rgba(255,255,255,0.7)',transition:'transform 0.15s,color 0.15s',transform:active?'scale(1.15)':'scale(1)'}}/>
-      {count!==undefined&&<span style={{fontSize:13,fontWeight:600,color:'rgba(255,255,255,0.6)'}}>{count}</span>}
-    </div>
-  )
-}
-
-// ── Right-side Instagram-style action button ──────────────────────────────────
-// Fully transparent background — icons float over the video/image.
-// Active state adds the accent color fill to the icon only (no background).
-function RightAction({ children, onClick, count, active, activeColor='#FF3366' }) {
-  return (
-    <div onClick={onClick} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:3,cursor:'pointer',WebkitTapHighlightColor:'transparent',userSelect:'none'}}>
-      <div style={{
-        width:44,height:44,borderRadius:'50%',
-        background:'transparent',
-        display:'flex',alignItems:'center',justifyContent:'center',
-        transform: active ? 'scale(1.12)' : 'scale(1)',
-        transition:'transform 0.15s',
-        filter: 'drop-shadow(0 1px 6px rgba(0,0,0,0.8))',
-      }}>
-        {children}
-      </div>
-      {count !== undefined && (
-        <span style={{fontSize:12,fontWeight:700,color:'white',textShadow:'0 1px 4px rgba(0,0,0,1)',lineHeight:1,letterSpacing:'-0.3px'}}>{count}</span>
-      )}
-    </div>
-  )
-}
-
 // ── Service post card — full-screen TikTok style ──────────────────────────────
-function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike, onSave, onShare, onComment, onDoubleTap, onChatSeller, onSellerTap }) {
+function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike, onSave, onShare, onComment, onDoubleTap, onChatSeller, onSellerTap, following, followLoading, onFollow, canFollow }) {
   const isVideo   = !!p.video_url
   const hasImages = p.images?.length > 0
+  const filterCSS = getFilterCSS(p.filter_name)
   const [muted,   setMuted]   = useState(true)
   const [paused,  setPaused]  = useState(false)
   const [imgIdx,  setImgIdx]  = useState(0)
@@ -248,7 +206,7 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
       {/* ── Full-screen background media ── */}
       {isVideo ? (
         <video ref={videoRef} src={p.video_url} className="feed-media-bg"
-          style={{objectFit:'cover',width:'100%',height:'100%'}}
+          style={{objectFit:'cover',width:'100%',height:'100%',filter:filterCSS||undefined}}
           autoPlay muted={muted} loop playsInline onClick={()=>setPaused(x=>!x)}/>
       ) : hasImages ? (
         p.images.length > 1 ? (
@@ -257,12 +215,12 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
             onScroll={e=>setImgIdx(Math.round(e.currentTarget.scrollLeft/e.currentTarget.offsetWidth))}
             onClick={()=>setPaused(x=>!x)}>
             {p.images.map((src,i)=>(
-              <img key={i} src={src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',flexShrink:0,scrollSnapAlign:'start'}}/>
+              <img key={i} src={src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',flexShrink:0,scrollSnapAlign:'start',filter:filterCSS||undefined}}/>
             ))}
           </div>
         ) : (
           <img src={p.images[0]} alt="" className="feed-media-bg"
-            style={{objectFit:'cover',width:'100%',height:'100%'}} onClick={()=>setPaused(x=>!x)}/>
+            style={{objectFit:'cover',width:'100%',height:'100%',filter:filterCSS||undefined}} onClick={()=>setPaused(x=>!x)}/>
         )
       ) : (
         <div className="feed-media-bg" style={{background:'#0d0d0d',display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setPaused(x=>!x)}>
@@ -299,36 +257,19 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
         </button>
       )}
 
-      {/* ── Right side actions — transparent, no avatar circle above icons ── */}
-      <div style={{position:'absolute',right:10,bottom:'calc(var(--nav-h,50px) + var(--safe-bottom,0px) + 80px)',display:'flex',flexDirection:'column',alignItems:'center',gap:18,zIndex:20}}>
-        <RightAction onClick={onLike} count={fmtCount(likes)} active={liked} activeColor="#FF3366">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill={liked?'#FF3366':'none'} stroke={liked?'#FF3366':'white'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 6px rgba(0,0,0,0.9))'}}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-        </RightAction>
-        <RightAction onClick={onComment} count={fmtCount(p.comments_count||0)}>
-          <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 6px rgba(0,0,0,0.9))'}}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        </RightAction>
-        <RightAction onClick={onShare}>
-          <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 6px rgba(0,0,0,0.9))'}}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </RightAction>
-        <RightAction onClick={onSave} active={saved} activeColor="#FF3366">
-          <svg width="24" height="28" viewBox="0 0 24 24" fill={saved?'#FF3366':'none'} stroke={saved?'#FF3366':'white'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 6px rgba(0,0,0,0.9))'}}><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
-        </RightAction>
-      </div>
+      <FeedActionRail
+        liked={liked} likes={likes} comments={p.comments_count||0}
+        saved={saved} saves={saves}
+        onLike={onLike} onComment={onComment} onShare={onShare} onSave={onSave}
+      />
 
-      <div className="feed-info" onClick={e=>e.stopPropagation()}>
-        <div className="feed-seller-row">
-          <div className="feed-seller-av" style={{background:sellerColor,overflow:'hidden',cursor:'pointer'}} onClick={onSellerTap}>
-            {seller?.avatar_url
-              ? <img src={seller.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-              : sellerInitial
-            }
-          </div>
-          <span className="feed-seller-name-txt" style={{cursor:'pointer'}} onClick={onSellerTap}>
-            {seller?.full_name||seller?.username||'Seller'}
-            {seller?.verified&&<span className="feed-verified">✓</span>}
-          </span>
-          <span style={{fontSize:9,fontWeight:800,padding:'2px 7px',borderRadius:20,background:'rgba(255,255,255,0.12)',color:'rgba(255,255,255,0.6)',border:'1px solid rgba(255,255,255,0.15)',marginLeft:4}}>SERVICE</span>
-        </div>
+      <div className="feed-info">
+        <FeedSellerRow
+          seller={seller} sellerColor={sellerColor} sellerInitial={sellerInitial}
+          following={following} followLoading={followLoading} onFollow={onFollow}
+          onSellerTap={onSellerTap} showFollow={canFollow}
+          badge={<span style={{fontSize:9,fontWeight:800,padding:'2px 7px',borderRadius:20,background:'rgba(255,255,255,0.12)',color:'rgba(255,255,255,0.6)',border:'1px solid rgba(255,255,255,0.15)',marginLeft:4}}>SERVICE</span>}
+        />
         {p.title&&<div className="feed-product-title">{p.title}</div>}
         {p.description&&<div className="feed-product-desc">{p.description}</div>}
         {/* Features */}
@@ -367,6 +308,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   const [saves,       setSaves]       = useState(p.saves_count||0)
   const [paused,      setPaused]      = useState(false)
   const [following,   setFollowing]   = useState(false)
+  const [followLoading,setFollowLoading]= useState(false)
   const [showHeart,   setShowHeart]   = useState(false)
   const [showReserve, setShowReserve] = useState(false)
   const [showChat,    setShowChat]    = useState(false)
@@ -456,15 +398,27 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   }
 
   const handleFollow = async () => {
-    if (!currentUser || !seller?.id || currentUser.id === seller.id) return
-    if (following) {
-      setFollowing(false)
-      await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', seller.id)
-    } else {
-      setFollowing(true)
-      await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: seller.id })
+    if (!currentUser || !seller?.id || currentUser.id === seller.id || followLoading) return
+    setFollowLoading(true)
+    const was = following
+    setFollowing(!was)
+    try {
+      if (was) {
+        const { error } = await supabase.from('follows').delete().eq('follower_id', currentUser.id).eq('following_id', seller.id)
+        if (error) setFollowing(was)
+      } else {
+        const { error } = await supabase.from('follows').insert({ follower_id: currentUser.id, following_id: seller.id })
+        if (error) setFollowing(was)
+      }
+    } finally {
+      setFollowLoading(false)
     }
   }
+
+  const canFollow = !!(currentUser?.id && seller?.id && currentUser.id !== seller.id)
+  const sellerTap = () => { if (seller?.id) setShowSellerProfile(true) }
+
+  const followProps = { following, followLoading, onFollow: handleFollow, canFollow }
 
   const handleChatSeller = async () => {
     if (!currentUser) { return }
@@ -489,15 +443,37 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
     }
   }
 
-  const commonProps = { p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike:handleLike, onSave:handleSave, onShare:handleShare, onComment:()=>onOpenComments&&onOpenComments(p), onDoubleTap:handleDoubleTap, onSellerTap:()=>seller?.id&&setShowSellerProfile(true) }
+  const commonProps = { p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike:handleLike, onSave:handleSave, onShare:handleShare, onComment:()=>onOpenComments&&onOpenComments(p), onDoubleTap:handleDoubleTap, onSellerTap:sellerTap, ...followProps }
+
+  const overlays = (
+    <>
+      {showHeart && <HeartFlash/>}
+      {showReserve && (
+        <OverlayPortal>
+          <ReservationPage post={p} seller={seller} currentUser={currentUser}
+            onBack={()=>setShowReserve(false)}
+            onConfirmed={()=>{ setShowReserve(false); handleChatSeller() }}
+          />
+        </OverlayPortal>
+      )}
+      {showChat && conversation && (
+        <OverlayPortal>
+          <ChatScreen conversation={conversation} currentUser={currentUser} onBack={()=>setShowChat(false)}/>
+        </OverlayPortal>
+      )}
+      {showSellerProfile && seller?.id && (
+        <OverlayPortal>
+          <UserProfileView userId={seller.id} currentUser={currentUser} onClose={()=>setShowSellerProfile(false)}/>
+        </OverlayPortal>
+      )}
+    </>
+  )
 
   // ── Social post ────────────────────────────────────────────────────────
   if (p.post_type === 'social') return (
     <div style={{position:'relative'}}>
       <SocialCard {...commonProps}/>
-      {showHeart && <HeartFlash/>}
-      {showChat && conversation && <ChatScreen conversation={conversation} currentUser={currentUser} onBack={()=>setShowChat(false)}/>}
-      {showSellerProfile && seller?.id && <UserProfileView userId={seller.id} currentUser={currentUser} onClose={()=>setShowSellerProfile(false)}/>}
+      {overlays}
     </div>
   )
 
@@ -505,9 +481,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   if (p.post_type === 'service') return (
     <div style={{position:'relative'}}>
       <ServiceCard {...commonProps} onChatSeller={handleChatSeller}/>
-      {showHeart && <HeartFlash/>}
-      {showChat && conversation && <ChatScreen conversation={conversation} currentUser={currentUser} onBack={()=>setShowChat(false)}/>}
-      {showSellerProfile && seller?.id && <UserProfileView userId={seller.id} currentUser={currentUser} onClose={()=>setShowSellerProfile(false)}/>}
+      {overlays}
     </div>
   )
 
@@ -515,6 +489,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   const hasImages  = p.images?.length > 0
   const multiImage = hasImages && p.images.length > 1
   const isVideo    = !!p.video_url
+  const filterCSS  = getFilterCSS(p.filter_name)
 
   return (
     <div ref={productRef} className={`feed-card${paused?' paused':''}`}
@@ -527,7 +502,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
           ref={videoRef}
           src={p.video_url}
           className="feed-media-bg"
-          style={{objectFit:'cover', width:'100%', height:'100%'}}
+          style={{objectFit:'cover', width:'100%', height:'100%', filter: filterCSS || undefined}}
           autoPlay
           muted={muted}
           loop
@@ -550,7 +525,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
             onClick={()=>setPaused(x=>!x)}
           >
             {p.images.map((src,i)=>(
-              <img key={i} src={src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',flexShrink:0,scrollSnapAlign:'start'}}/>
+              <img key={i} src={src} alt="" style={{width:'100%',height:'100%',objectFit:'cover',flexShrink:0,scrollSnapAlign:'start',filter:filterCSS||undefined}}/>
             ))}
           </div>
         ) : (
@@ -558,7 +533,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
             src={p.images[0]}
             alt=""
             className="feed-media-bg"
-            style={{objectFit:'cover',width:'100%',height:'100%'}}
+            style={{objectFit:'cover',width:'100%',height:'100%',filter:filterCSS||undefined}}
             onClick={()=>setPaused(x=>!x)}
           />
         )
@@ -600,60 +575,36 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
         </button>
       )}
 
-      {/* Distance badge */}
-      {distanceKm!==null&&(
-        <div style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px) + 100px)',left:14,display:'inline-flex',alignItems:'center',gap:5,background:'rgba(34,197,94,0.15)',border:'1px solid rgba(34,197,94,0.3)',backdropFilter:'blur(8px)',borderRadius:20,padding:'3px 10px',fontSize:11,fontWeight:700,color:'#22C55E',zIndex:16}}>
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-          {fmtDistance(distanceKm)}
-        </div>
-      )}
-
-      {/* Hot badge */}
-      {p.is_hot&&(
-        <div style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px) + 58px)',left:14,background:'linear-gradient(135deg,#FF3366,#F97316)',borderRadius:20,padding:'4px 12px',fontSize:11,fontWeight:800,color:'white',display:'flex',alignItems:'center',gap:5,zIndex:16,boxShadow:'0 2px 12px rgba(255,51,102,0.4)'}}>
-          🔥 Hot Deal
-        </div>
-      )}
-
-      {/* Right actions — transparent, no avatar circle, consistent icon order */}
-      <div className="feed-actions" onClick={e=>e.stopPropagation()}>
-        <RightAction onClick={handleLike} count={fmtCount(likes)} active={liked} activeColor="#FF3366">
-          <svg width="28" height="28" viewBox="0 0 24 24" fill={liked?'#FF3366':'none'} stroke={liked?'#FF3366':'white'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 8px rgba(0,0,0,1))'}}><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
-        </RightAction>
-        <RightAction onClick={()=>onOpenComments&&onOpenComments(p)} count={fmtCount(p.comments_count||0)}>
-          <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 8px rgba(0,0,0,1))'}}><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-        </RightAction>
-        <RightAction onClick={handleShare} count={fmtCount(p.shares_count||0)}>
-          <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 8px rgba(0,0,0,1))'}}><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </RightAction>
-        <RightAction onClick={handleSave} count={fmtCount(saves)} active={saved} activeColor="#FF3366">
-          <svg width="24" height="28" viewBox="0 0 24 24" fill={saved?'#FF3366':'none'} stroke={saved?'#FF3366':'white'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{filter:'drop-shadow(0 1px 8px rgba(0,0,0,1))'}}><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>
-        </RightAction>
-      </div>
+      <FeedActionRail
+        liked={liked} likes={likes} comments={p.comments_count||0}
+        saved={saved} saves={saves} shares={p.shares_count||0}
+        onLike={handleLike}
+        onComment={()=>onOpenComments&&onOpenComments(p)}
+        onShare={handleShare}
+        onSave={handleSave}
+      />
 
       {/* Bottom info */}
-      <div className="feed-info" onClick={e=>e.stopPropagation()}>
-        {distanceKm===null&&(
-          <div className="feed-seller-row">
-            <div className="feed-seller-av" style={{background:sellerColor,overflow:'hidden',cursor:'pointer'}}
-              onClick={()=>seller?.id&&setShowSellerProfile(true)}>
-              {seller?.avatar_url
-                ? <img src={seller.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-                : sellerInitial
-              }
-            </div>
-            <span className="feed-seller-name-txt" style={{cursor:'pointer'}}
-              onClick={()=>seller?.id&&setShowSellerProfile(true)}>
-              {seller?.full_name||seller?.username||'Seller'}
-              {seller?.verified&&<span className="feed-verified">✓</span>}
-            </span>
-            <button className="feed-follow-btn" onClick={e=>{e.stopPropagation();handleFollow()}}>
-              {following ? 'Following' : 'Follow'}
-            </button>
+      <div className="feed-info">
+        <FeedSellerRow
+          seller={seller} sellerColor={sellerColor} sellerInitial={sellerInitial}
+          following={following} followLoading={followLoading} onFollow={handleFollow}
+          onSellerTap={sellerTap} showFollow={canFollow}
+        />
+        {distanceKm !== null && (
+          <div style={{display:'inline-flex',alignItems:'center',gap:5,marginBottom:6,background:'rgba(34,197,94,0.15)',border:'1px solid rgba(34,197,94,0.3)',backdropFilter:'blur(8px)',borderRadius:20,padding:'3px 10px',fontSize:11,fontWeight:700,color:'#22C55E'}}>
+            <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            {fmtDistance(distanceKm)}
           </div>
         )}
         {p.title&&<div className="feed-product-title">{p.title}</div>}
         {p.description&&<div className="feed-product-desc">{p.description}</div>}
+        {(p.music_title || p.music_artist) && <FeedMusicPill title={p.music_title} artist={p.music_artist} />}
+        {p.is_hot && (
+          <div style={{display:'inline-flex',alignItems:'center',gap:5,marginBottom:6,background:'linear-gradient(135deg,#FF3366,#F97316)',borderRadius:20,padding:'3px 10px',fontSize:10,fontWeight:800,color:'white'}}>
+            🔥 Hot Deal
+          </div>
+        )}
         {priceStr&&(
           <div className="feed-price-row">
             <span className="feed-price">{priceStr}</span>
@@ -671,22 +622,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
         </div>
       </div>
 
-      {showHeart&&<HeartFlash/>}
-
-      {showReserve && (
-        <ReservationPage post={p} seller={seller} currentUser={currentUser}
-          onBack={()=>setShowReserve(false)}
-          onConfirmed={()=>{ setShowReserve(false); handleChatSeller() }}
-        />
-      )}
-
-      {showChat && conversation && (
-        <ChatScreen conversation={conversation} currentUser={currentUser} onBack={()=>setShowChat(false)}/>
-      )}
-
-      {showSellerProfile && seller?.id && (
-        <UserProfileView userId={seller.id} currentUser={currentUser} onClose={()=>setShowSellerProfile(false)}/>
-      )}
+      {overlays}
     </div>
   )
 }

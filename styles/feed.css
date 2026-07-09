@@ -121,37 +121,47 @@
 .feed-card.paused .feed-play { opacity: 1; }
 .feed-play i { font-size: 28px; color: white; margin-left: 4px; }
 
-/* ── RIGHT ACTION STRIP ──
-   Bottom aligned with the top of the price row.             */
-.feed-actions {
+/* ── RIGHT ACTION STRIP (Instagram-style glass buttons) ── */
+.feed-actions,
+.feed-action-rail {
   position: absolute;
-  right: 10px;
+  right: 8px;
   bottom: calc(var(--nav-h) + var(--safe-bottom) + 72px);
   display: flex; flex-direction: column;
-  align-items: center; gap: 16px;
-  z-index: 20;
+  align-items: center; gap: 14px;
+  z-index: 22;
+  pointer-events: none;
 }
-.feed-action-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
+.feed-action-rail > * { pointer-events: auto; }
+
+.feed-action-btn-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
   cursor: pointer; -webkit-tap-highlight-color: transparent;
+  user-select: none; border: none; background: none; padding: 0;
+  font-family: inherit;
 }
-.feed-action-btn i {
-  font-size: 25px; color: white;
-  filter: drop-shadow(0 1px 4px rgba(0,0,0,0.9));
-  transition: transform 0.15s;
+.feed-action-glass {
+  width: 46px; height: 46px; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+  display: flex; align-items: center; justify-content: center;
+  transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
 }
-.feed-action-btn:active i { transform: scale(0.82); }
-.feed-action-btn i.liked { color: #FF3366; }
-.feed-action-btn i.saved { color: #FF3366; }
+.feed-action-btn-wrap:active .feed-action-glass { transform: scale(0.88); }
+.feed-action-btn-wrap.active .feed-action-glass {
+  background: rgba(255, 51, 102, 0.18);
+  border-color: rgba(255, 51, 102, 0.45);
+}
+.feed-action-glass svg {
+  display: block;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.45));
+}
 .feed-action-count {
   font-size: 11px; font-weight: 700; color: white;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
-}
-.feed-action-av {
-  width: 36px; height: 36px; border-radius: 50%;
-  border: 2px solid white; font-size: 11px; font-weight: 900;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
-  display: flex; align-items: center; justify-content: center;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+  line-height: 1; letter-spacing: -0.2px;
 }
 
 /* ── BOTTOM INFO BLOCK — compact, minimal ── */
@@ -159,15 +169,20 @@
   position: absolute;
   left: 0; right: 0;
   bottom: calc(var(--nav-h) + var(--safe-bottom));
-  z-index: 20;
+  z-index: 21;
   padding: 0 12px 10px;
+  pointer-events: none;
 }
+.feed-info > * { pointer-events: auto; }
 
 /* Seller row — avatar + name + verified + follow all inline, Instagram-style */
 .feed-seller-row {
   display: flex; align-items: center; gap: 8px;
   margin-bottom: 4px;
-  padding-right: 52px;
+  padding-right: 76px;
+  position: relative;
+  z-index: 24;
+  pointer-events: auto;
 }
 .feed-seller-av {
   width: 30px; height: 30px; border-radius: 50%;
@@ -188,16 +203,42 @@
 }
 /* Follow button — IG style: rounded pill, no color change on press */
 .feed-follow-btn {
-  flex-shrink: 0; margin-left: 4px;
-  padding: 5px 14px; border-radius: 20px;
-  border: 1.5px solid rgba(255,255,255,0.7);
-  background: transparent;
+  flex-shrink: 0; margin-left: auto;
+  padding: 6px 16px; border-radius: 999px;
+  border: 1.5px solid rgba(255,255,255,0.75);
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   color: white; font-size: 12px; font-weight: 700;
   cursor: pointer; font-family: 'Inter', sans-serif;
-  white-space: nowrap; letter-spacing: '-0.2px';
-  transition: opacity 0.15s;
+  white-space: nowrap; letter-spacing: -0.2px;
+  transition: opacity 0.15s, transform 0.15s, background 0.15s;
+  position: relative; z-index: 25;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
-.feed-follow-btn:active { opacity: 0.75; }
+.feed-follow-btn:active { opacity: 0.8; transform: scale(0.96); }
+.feed-follow-btn.following {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+}
+.feed-follow-btn:disabled { opacity: 0.5; cursor: default; }
+
+/* Music marquee (TikTok / IG Reels style) */
+.feed-music-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  max-width: 200px; margin-top: 6px;
+  padding: 5px 10px; border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 11px; font-weight: 600; color: rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+}
+.feed-music-pill span {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 
 /* Product title */
 .feed-product-title {
