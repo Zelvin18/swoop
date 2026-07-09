@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { formatUGX, discountPct, fmtCount, fmtDistance, likePost, unlikePost, savePost, unsavePost, sharePost, recordView } from '../lib/feed'
 import { supabase } from '../lib/supabase'
-import ReservationPage from './ReservationPage'
-import ChatScreen      from './ChatScreen'
+import ReservationPage    from './ReservationPage'
+import ChatScreen         from './ChatScreen'
+import UserProfileView    from './UserProfileView'
 
 // ── Deterministic avatar colour ───────────────────────────────────────────────
 function avatarColor(id=''){const C=['#7C3AED','#FF3366','#F97316','#22C55E','#3B82F6','#EC4899','#F59E0B','#06B6D4'];return C[id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%C.length]}
@@ -27,7 +28,7 @@ if (typeof window !== 'undefined') {
 }
 
 // ── Social post — full-screen Instagram Reels style ───────────────────────────
-function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike, onSave, onShare, onComment, onDoubleTap }) {
+function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike, onSave, onShare, onComment, onDoubleTap, onSellerTap }) {
   const isVideo   = !!p.video_url
   const hasImages = p.images?.length > 0
   const [imgIdx,  setImgIdx]  = useState(0)
@@ -151,14 +152,13 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
       {/* ── Bottom info ── */}
       <div style={{position:'absolute',left:0,right:0,bottom:'calc(var(--nav-h,50px) + var(--safe-bottom,0px))',zIndex:20,padding:'0 14px 14px 14px',paddingRight:68}}>
         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:7}}>
-          {/* Real profile picture */}
-          <div style={{width:32,height:32,borderRadius:'50%',background:sellerColor,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:900,color:'white',flexShrink:0,boxShadow:'0 1px 6px rgba(0,0,0,0.5)',overflow:'hidden',border:'1.5px solid rgba(255,255,255,0.6)'}}>
+          <div onClick={onSellerTap} style={{width:32,height:32,borderRadius:'50%',background:sellerColor,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:900,color:'white',flexShrink:0,boxShadow:'0 1px 6px rgba(0,0,0,0.5)',overflow:'hidden',border:'1.5px solid rgba(255,255,255,0.6)',cursor:'pointer'}}>
             {seller?.avatar_url
               ? <img src={seller.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
               : sellerInitial
             }
           </div>
-          <span style={{fontSize:13,fontWeight:700,color:'white',textShadow:'0 1px 4px rgba(0,0,0,0.9)'}}>{seller?.full_name||seller?.username||'User'}</span>
+          <span onClick={onSellerTap} style={{fontSize:13,fontWeight:700,color:'white',textShadow:'0 1px 4px rgba(0,0,0,0.9)',cursor:'pointer'}}>{seller?.full_name||seller?.username||'User'}</span>
           {seller?.verified&&<span style={{width:14,height:14,borderRadius:'50%',background:'#3B82F6',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:7,color:'white',fontWeight:900,flexShrink:0}}>✓</span>}
         </div>
         {p.caption && <div style={{fontSize:14,color:'rgba(255,255,255,0.92)',lineHeight:1.5,textShadow:'0 1px 4px rgba(0,0,0,0.8)',marginBottom:5,display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{p.caption}</div>}
@@ -202,7 +202,7 @@ function RightAction({ children, onClick, count, active, activeColor='#FF3366' }
 }
 
 // ── Service post card — full-screen TikTok style ──────────────────────────────
-function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike, onSave, onShare, onComment, onDoubleTap, onChatSeller }) {
+function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike, onSave, onShare, onComment, onDoubleTap, onChatSeller, onSellerTap }) {
   const isVideo   = !!p.video_url
   const hasImages = p.images?.length > 0
   const [muted,   setMuted]   = useState(true)
@@ -315,16 +315,15 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
         </RightAction>
       </div>
 
-      {/* ── Bottom info — same style as product ── */}
-      <div className="feed-info">
+      <div className="feed-info" onClick={e=>e.stopPropagation()}>
         <div className="feed-seller-row">
-          <div className="feed-seller-av" style={{background:sellerColor,overflow:'hidden'}}>
+          <div className="feed-seller-av" style={{background:sellerColor,overflow:'hidden',cursor:'pointer'}} onClick={onSellerTap}>
             {seller?.avatar_url
               ? <img src={seller.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
               : sellerInitial
             }
           </div>
-          <span className="feed-seller-name-txt">
+          <span className="feed-seller-name-txt" style={{cursor:'pointer'}} onClick={onSellerTap}>
             {seller?.full_name||seller?.username||'Seller'}
             {seller?.verified&&<span className="feed-verified">✓</span>}
           </span>
@@ -374,6 +373,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   const [conversation,setConversation]= useState(null)
   const [muted,       setMuted]       = useState(true)
   const [imgIdx,      setImgIdx]      = useState(0)
+  const [showSellerProfile, setShowSellerProfile] = useState(false)
   const heartTimer  = useRef(null)
   const videoRef    = useRef(null)
   const productRef  = useRef(null)
@@ -489,7 +489,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
     }
   }
 
-  const commonProps = { p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike:handleLike, onSave:handleSave, onShare:handleShare, onComment:()=>onOpenComments&&onOpenComments(p), onDoubleTap:handleDoubleTap }
+  const commonProps = { p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike:handleLike, onSave:handleSave, onShare:handleShare, onComment:()=>onOpenComments&&onOpenComments(p), onDoubleTap:handleDoubleTap, onSellerTap:()=>seller?.id&&setShowSellerProfile(true) }
 
   // ── Social post ────────────────────────────────────────────────────────
   if (p.post_type === 'social') return (
@@ -497,6 +497,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
       <SocialCard {...commonProps}/>
       {showHeart && <HeartFlash/>}
       {showChat && conversation && <ChatScreen conversation={conversation} currentUser={currentUser} onBack={()=>setShowChat(false)}/>}
+      {showSellerProfile && seller?.id && <UserProfileView userId={seller.id} currentUser={currentUser} onClose={()=>setShowSellerProfile(false)}/>}
     </div>
   )
 
@@ -506,6 +507,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
       <ServiceCard {...commonProps} onChatSeller={handleChatSeller}/>
       {showHeart && <HeartFlash/>}
       {showChat && conversation && <ChatScreen conversation={conversation} currentUser={currentUser} onBack={()=>setShowChat(false)}/>}
+      {showSellerProfile && seller?.id && <UserProfileView userId={seller.id} currentUser={currentUser} onClose={()=>setShowSellerProfile(false)}/>}
     </div>
   )
 
@@ -633,13 +635,15 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
       <div className="feed-info" onClick={e=>e.stopPropagation()}>
         {distanceKm===null&&(
           <div className="feed-seller-row">
-            <div className="feed-seller-av" style={{background:sellerColor,overflow:'hidden'}}>
+            <div className="feed-seller-av" style={{background:sellerColor,overflow:'hidden',cursor:'pointer'}}
+              onClick={()=>seller?.id&&setShowSellerProfile(true)}>
               {seller?.avatar_url
                 ? <img src={seller.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                 : sellerInitial
               }
             </div>
-            <span className="feed-seller-name-txt">
+            <span className="feed-seller-name-txt" style={{cursor:'pointer'}}
+              onClick={()=>seller?.id&&setShowSellerProfile(true)}>
               {seller?.full_name||seller?.username||'Seller'}
               {seller?.verified&&<span className="feed-verified">✓</span>}
             </span>
@@ -678,6 +682,10 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
 
       {showChat && conversation && (
         <ChatScreen conversation={conversation} currentUser={currentUser} onBack={()=>setShowChat(false)}/>
+      )}
+
+      {showSellerProfile && seller?.id && (
+        <UserProfileView userId={seller.id} currentUser={currentUser} onClose={()=>setShowSellerProfile(false)}/>
       )}
     </div>
   )
