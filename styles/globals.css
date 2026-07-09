@@ -265,3 +265,156 @@ body { background: #000; }
 @media (min-width: 430px) {
   body { background: #111; }
 }
+
+/* ── FEED ACTION RAIL (new icon buttons) ── */
+.feed-action-rail {
+  position: absolute;
+  right: 10px;
+  bottom: calc(var(--nav-h) + var(--safe-bottom) + 80px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  z-index: 20;
+}
+.feed-action-btn-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  padding: 0;
+}
+.feed-action-glass {
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: transparent;
+  display: flex; align-items: center; justify-content: center;
+  filter: drop-shadow(0 1px 6px rgba(0,0,0,0.85));
+  transition: transform 0.15s;
+}
+.feed-action-btn-wrap:active .feed-action-glass { transform: scale(0.88); }
+.feed-action-btn-wrap.active .feed-action-glass { transform: scale(1.12); }
+.feed-action-count {
+  font-size: 12px; font-weight: 700; color: white;
+  text-shadow: 0 1px 4px rgba(0,0,0,1);
+  line-height: 1; letter-spacing: -0.3px;
+}
+
+/* ── FEED MUSIC PILL ── */
+.feed-music-pill {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: rgba(255,255,255,0.7);
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px; padding: 4px 10px;
+  max-width: 160px; overflow: hidden;
+  white-space: nowrap; text-overflow: ellipsis;
+}
+.feed-music-pill span {
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── FOLLOW BUTTON (feed card) ── */
+.feed-follow-btn.following {
+  border-color: rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.6);
+}
+
+/* ── PENDING POST CARD (TikTok-style upload indicator) ── */
+.pending-post-card {
+  position: relative;
+  overflow: hidden;
+}
+.pending-post-media {
+  position: absolute; inset: 0;
+}
+.pending-post-shade {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(2px);
+}
+.pending-post-progress-wrap {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px; padding: 24px;
+  z-index: 5;
+}
+.pending-post-spinner {
+  width: 36px; height: 36px;
+  border: 3px solid rgba(255,255,255,0.12);
+  border-top-color: #FF3366;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+.pending-post-status {
+  font-size: 14px; font-weight: 600; color: white;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  text-align: center;
+}
+.pending-post-bar {
+  width: 80%; max-width: 220px; height: 3px;
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px; overflow: hidden;
+}
+.pending-post-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FF3366, #FF6633);
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+.pending-post-pct {
+  font-size: 12px; color: rgba(255,255,255,0.5);
+  font-variant-numeric: tabular-nums;
+}
+.pending-post-done {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 800; color: white;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  z-index: 5;
+}
+.pending-post-error {
+  position: absolute; inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 10px; z-index: 5; padding: 24px;
+}
+.pending-post-error div {
+  font-size: 13px; color: #FF3366; font-weight: 600;
+  text-align: center;
+}
+.pending-post-error button {
+  padding: 8px 18px; border-radius: 20px;
+  background: rgba(255,51,102,0.15);
+  border: 1px solid rgba(255,51,102,0.3);
+  color: #FF3366; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: inherit;
+}
+.pending-post-info {
+  position: absolute;
+  left: 0; right: 0;
+  bottom: calc(var(--nav-h) + var(--safe-bottom));
+  z-index: 6; padding: 0 14px 14px;
+  display: flex; align-items: center; gap: 8;
+}
+.pending-post-badge {
+  font-size: 9px; font-weight: 800;
+  padding: 2px 7px; border-radius: 4px;
+  background: rgba(255,51,102,0.8); color: white;
+  flex-shrink: 0; text-transform: uppercase;
+}
+.pending-post-title {
+  font-size: 14px; font-weight: 700; color: white;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── DB schema columns for posts (reminder to run fix-schema.sql) ── */
+/* text_overlays jsonb[], music_file_url text, music_title text, music_artist text */

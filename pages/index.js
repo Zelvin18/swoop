@@ -18,6 +18,7 @@ export default function Home() {
   const [toast, setToast]             = useState({ show:false, msg:'' })
   const [user, setUser]               = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [refreshToken, setRefreshToken] = useState(0)
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {

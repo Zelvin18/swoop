@@ -5,8 +5,8 @@
  * Step 2: Details (varies by type)
  */
 import { useState, useRef } from 'react'
-import { createPost, saveDraft, CATEGORIES, CATEGORY_EMOJI } from '../lib/feed'
-import { editorMeta } from '../lib/postEditorMeta'
+import { saveDraft, CATEGORIES, CATEGORY_EMOJI } from '../lib/feed'
+import { enqueuePost } from '../lib/pendingUploads'
 import MediaEditor from './MediaEditor'
 
 const CONDITIONS = ['Brand New','Like New','Good Condition','Fair Condition']
@@ -94,59 +94,62 @@ export default function AddPostModal({ onClose, showToast, currentUser, onPosted
   }
   const removeMedia = (idx) => setMediaFiles(p=>p.filter((_,i)=>i!==idx))
 
-  const handlePost = async () => {
+  const handlePost = () => {
     if (!currentUser) { showToast('Sign in to post'); return }
-    setPosting(true)
-    let post = null
-    const meta = editorMeta(editorResult)
-    try {
-      if (postType === 'social') {
-        post = await createPost({
-          sellerId: currentUser.id, postType: 'social',
-          caption: caption.trim(),
-          title: caption.trim().slice(0,60) || 'Social post',
-          location: location.trim() || null,
-          mediaFiles,
-          ...meta,
-        })
-      } else if (postType === 'product') {
-        post = await createPost({
-          sellerId: currentUser.id, postType: 'product',
-          title: title.trim(), description: desc.trim(),
-          price, origPrice,
-          category: category || 'Other',
-          condition, brand,
-          location: location || 'Kampala, Uganda',
-          isNegotiable: negotiable,
-          deliveryAvailable: delivery,
-          isHot,
-          emoji: CATEGORY_EMOJI[category] || '📦',
-          mediaFiles,
-          ...meta,
-        })
-      } else if (postType === 'service') {
-        post = await createPost({
-          sellerId: currentUser.id, postType: 'service',
-          title: serviceTitle.trim(),
-          description: serviceDesc.trim(),
-          serviceCategory: serviceCat || 'Other',
-          serviceRate, serviceRateType,
-          serviceFeatures: serviceFeatures.filter(f=>f.trim()),
-          serviceDuration,
-          emoji: '🛠️',
-          mediaFiles,
-          ...meta,
-        })
+
+    let displayTitle = 'New post'
+    let postFields = {}
+
+    if (postType === 'social') {
+      displayTitle = caption.trim().slice(0, 60) || 'Social post'
+      postFields = {
+        caption: caption.trim(),
+        title: displayTitle,
+        location: location.trim() || null,
       }
-    } catch (err) {
-      console.error('Post error:', err)
-      showToast('Failed to post. Check console for details.')
-      setPosting(false)
-      return
+    } else if (postType === 'product') {
+      displayTitle = title.trim()
+      postFields = {
+        title: displayTitle,
+        description: desc.trim(),
+        price, origPrice,
+        category: category || 'Other',
+        condition, brand,
+        location: location || 'Kampala, Uganda',
+        isNegotiable: negotiable,
+        deliveryAvailable: delivery,
+        isHot,
+        emoji: CATEGORY_EMOJI[category] || '📦',
+      }
+    } else if (postType === 'service') {
+      displayTitle = serviceTitle.trim()
+      postFields = {
+        title: displayTitle,
+        description: serviceDesc.trim(),
+        serviceCategory: serviceCat || 'Other',
+        serviceRate, serviceRateType,
+        serviceFeatures: serviceFeatures.filter(f => f.trim()),
+        serviceDuration,
+        emoji: '🛠️',
+      }
     }
-    setPosting(false)
-    if (post) { showToast('Post published! 🎉'); onPosted?.(post); onClose() }
-    else showToast('Failed to post — run fix-schema.sql in Supabase first.')
+
+    const clips = editorResult?.mediaFiles || mediaFiles
+    const previewUrl = clips[0]?.url || null
+
+    enqueuePost({
+      sellerId: currentUser.id,
+      postType,
+      postFields,
+      mediaFiles: clips,
+      editorResult,
+      previewUrl,
+      title: displayTitle,
+    })
+
+    showToast('Posting…')
+    onPosted?.()
+    onClose()
   }
 
   // ── Media editor ────────────────────────────────────────────────────────

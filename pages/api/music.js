@@ -1,58 +1,59 @@
 /**
- * /api/music — Proxy for Jamendo API (avoids CORS)
+ * /api/music — Jamendo proxy with built-in fallback catalog
  * GET /api/music?q=search&genre=pop&limit=40
  */
+import { searchCuratedTracks, CURATED_TRACKS } from '../../lib/musicLibrary'
+
 export default async function handler(req, res) {
   const { q = '', genre = '', limit = 40 } = req.query
-  const CLIENT_ID = '57924d00'
+  const CLIENT_ID = process.env.JAMENDO_CLIENT_ID || ''
 
-  // Jamendo v3 tracks endpoint with audio streaming URL
-  const params = new URLSearchParams({
-    client_id: CLIENT_ID,
-    format: 'json',
-    limit: String(limit),
-    order: 'popularity_total_desc',
-    include: 'musicinfo',
-    audioformat: 'mp31',   // mp31 = 96kbps, most widely available
-    speed: 'medium',
-  })
-  if (q)                        params.set('namesearch', q)
-  if (genre && genre !== 'All') params.set('tags', genre.toLowerCase().replace('-', ''))
+  let tracks = []
+  let source = 'curated'
 
-  const url = `https://api.jamendo.com/v3.0/tracks/?${params}`
+  if (CLIENT_ID) {
+    try {
+      const params = new URLSearchParams({
+        client_id: CLIENT_ID,
+        format: 'json',
+        limit: String(Math.min(Number(limit) || 40, 50)),
+        order: 'popularity_total_desc',
+        include: 'musicinfo',
+        audioformat: 'mp32',
+      })
+      if (q) params.set('namesearch', String(q))
+      if (genre && genre !== 'All') params.set('tags', String(genre).toLowerCase().replace(/-/g, ''))
 
-  try {
-    const response = await fetch(url, {
-      headers: { 'Accept': 'application/json', 'User-Agent': 'Swoop/1.0' },
-    })
-    if (!response.ok) {
-      const text = await response.text()
-      console.error('Jamendo error:', response.status, text.slice(0, 200))
-      throw new Error(`Jamendo ${response.status}`)
+      const response = await fetch(`https://api.jamendo.com/v3.0/tracks/?${params}`, {
+        headers: { Accept: 'application/json', 'User-Agent': 'Swoop/1.0' },
+      })
+      const data = await response.json()
+
+      if (data.headers?.status === 'success' && data.results?.length) {
+        tracks = data.results.map(t => ({
+          id: String(t.id),
+          title: t.name,
+          artist: t.artist_name,
+          file_url: t.audio || t.audiodownload || '',
+          duration_sec: Number(t.duration) || 0,
+          cover_url: t.album_image || t.image || null,
+          genre: t.musicinfo?.tags?.genres?.[0] || genre || 'Music',
+        })).filter(t => t.file_url)
+        source = 'jamendo'
+      }
+    } catch (err) {
+      console.error('Jamendo fetch failed:', err.message)
     }
-    const data = await response.json()
-
-    if (data.headers?.status !== 'success') {
-      console.error('Jamendo API error:', data.headers)
-      throw new Error(data.headers?.error_message || 'Jamendo API error')
-    }
-
-    const tracks = (data.results || []).map(t => ({
-      id:           String(t.id),
-      title:        t.name,
-      artist:       t.artist_name,
-      // audio is the streaming URL (mp3)
-      file_url:     t.audio || t.audiodownload || '',
-      duration_sec: Number(t.duration) || 0,
-      cover_url:    t.album_image || t.image || null,
-      genre:        t.musicinfo?.tags?.genres?.[0] || genre || 'Music',
-    })).filter(t => t.file_url)
-
-    res.setHeader('Cache-Control', 's-maxage=1800, stale-while-revalidate')
-    res.json({ tracks, total: data.headers?.results_count || tracks.length })
-  } catch (err) {
-    console.error('Music API error:', err.message)
-    // Return empty rather than 500 so UI shows helpful message
-    res.json({ tracks: [], error: err.message })
   }
+
+  if (!tracks.length) {
+    tracks = searchCuratedTracks({ q: String(q), genre: String(genre), limit: Number(limit) || 40 })
+    if (!tracks.length && (q || (genre && genre !== 'All'))) {
+      tracks = CURATED_TRACKS.slice(0, Number(limit) || 40)
+    }
+    source = 'curated'
+  }
+
+  res.setHeader('Cache-Control', 's-maxage=600, stale-while-revalidate')
+  res.json({ tracks, total: tracks.length, source })
 }

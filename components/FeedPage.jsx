@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from 'react'
 import FeedCard                  from './FeedCard'
+import PendingPostCard, { subscribePendingUploads } from './PendingPostCard'
 import PostCommentsSheet         from './PostCommentsSheet'
 import LocationPermissionScreen  from './LocationPermissionScreen'
 import FeedSearchPanel           from './FeedSearchPanel'
@@ -24,6 +25,7 @@ export default function FeedPage({ showToast, onTabChange, currentUser, refreshT
   const [hasMore,      setHasMore]      = useState(true)
   const [commentPost,  setCommentPost]  = useState(null)
   const [showSearch,   setShowSearch]   = useState(false)
+  const [pendingPosts, setPendingPosts] = useState([])
 
   // Location state
   const [userLat,      setUserLat]      = useState(null)
@@ -112,6 +114,25 @@ export default function FeedPage({ showToast, onTabChange, currentUser, refreshT
       loadPosts(true)
     }
   }, [refreshToken])
+
+  // TikTok-style pending uploads at top of feed
+  useEffect(() => {
+    return subscribePendingUploads(items => {
+      setPendingPosts(items)
+      const completed = items.filter(i => i.status === 'done' && i.post)
+      if (completed.length) {
+        setPosts(prev => {
+          let next = [...prev]
+          for (const item of completed) {
+            if (!next.some(p => p.id === item.post.id)) {
+              next = [{ ...item.post, seller: item.post.seller || item.seller }, ...next]
+            }
+          }
+          return next
+        })
+      }
+    })
+  }, [])
 
   // Re-load when location granted
   useEffect(() => {
@@ -234,6 +255,11 @@ export default function FeedPage({ showToast, onTabChange, currentUser, refreshT
         {!loading && posts.length === 0 && !(activeTab === 'Nearby' && userLat === null && locStatus === 'denied') && (
           <EmptyState tab={activeTab} category={activeCat} />
         )}
+
+        {/* Pending uploads (TikTok-style) */}
+        {pendingPosts.filter(p => p.status !== 'done').map(p => (
+          <PendingPostCard key={p.id} item={p} />
+        ))}
 
         {/* Posts */}
         {!loading && posts.map(p => (

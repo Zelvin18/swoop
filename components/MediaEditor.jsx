@@ -7,22 +7,7 @@
  * - Floating tool buttons on right side
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
-
-const CLIP_SEC = 3
-
-const FILTERS = [
-  { name:'Original', css:'' },
-  { name:'Vivid',    css:'saturate(1.6) contrast(1.1)' },
-  { name:'Matte',    css:'contrast(0.9) saturate(0.8) brightness(1.05)' },
-  { name:'Cool',     css:'hue-rotate(20deg) saturate(1.1)' },
-  { name:'Warm',     css:'hue-rotate(-15deg) saturate(1.2) brightness(1.05)' },
-  { name:'Fade',     css:'contrast(0.85) brightness(1.12) saturate(0.7)' },
-  { name:'Mono',     css:'grayscale(1)' },
-  { name:'Drama',    css:'contrast(1.35) saturate(1.15) brightness(0.92)' },
-  { name:'Chrome',   css:'saturate(0) contrast(1.4) brightness(1.1)' },
-  { name:'Golden',   css:'sepia(0.5) saturate(1.3) brightness(1.05)' },
-  { name:'Noir',     css:'grayscale(0.8) contrast(1.3) brightness(0.85)' },
-]
+import { MEDIA_FILTERS } from '../lib/mediaFilters'
 
 export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
   const [clips,         setClips]         = useState(() => initFiles.map(f => ({ ...f, filter:'Original', textOverlays:[] })))
@@ -84,10 +69,9 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
     stopPlayback(); startPlayback(currentTime)
   }, [selectedTrack, musicStart])
 
-  // Load music from API proxy
+  // Load music when sound panel opens
   useEffect(() => {
     if (panel !== 'sound') return
-    if (tracks.length && !musicQuery) return
     setLoadingTracks(true)
     const params = new URLSearchParams({ limit: 40 })
     if (musicQuery) params.set('q', musicQuery)
@@ -96,23 +80,7 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
       .then(r => r.json())
       .then(data => { setTracks(data.tracks || []); setLoadingTracks(false) })
       .catch(() => { setTracks([]); setLoadingTracks(false) })
-  }, [panel, musicGenre])
-
-  // Search with debounce
-  useEffect(() => {
-    if (panel !== 'sound') return
-    const t = setTimeout(() => {
-      setLoadingTracks(true)
-      const params = new URLSearchParams({ limit: 40 })
-      if (musicQuery) params.set('q', musicQuery)
-      if (musicGenre !== 'All') params.set('genre', musicGenre)
-      fetch(`/api/music?${params}`)
-        .then(r => r.json())
-        .then(data => { setTracks(data.tracks || []); setLoadingTracks(false) })
-        .catch(() => { setTracks([]); setLoadingTracks(false) })
-    }, 500)
-    return () => clearTimeout(t)
-  }, [musicQuery])
+  }, [panel, musicGenre, musicQuery])
 
   const handlePreviewTrack = (track) => {
     if (previewTrack?.id === track.id) {
@@ -149,7 +117,15 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
 
   const handleDone = () => {
     stopPlayback()
-    onDone({ mediaFiles: clips, selectedTrack, musicStart, perClipFilters: clips.map(c => c.filter) })
+    const allOverlays = clips.flatMap(c => c.textOverlays || [])
+    onDone({
+      mediaFiles: clips,
+      selectedTrack,
+      musicStart,
+      perClipFilters: clips.map(c => c.filter),
+      filter: clips[0]?.filter || 'Original',
+      textOverlays: allOverlays,
+    })
   }
 
   const timePercent = totalDur > 0 ? Math.min((currentTime / totalDur) * 100, 100) : 0
@@ -193,6 +169,15 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
               ? <img src={activeClip?.url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
               : <div style={{color:'rgba(255,255,255,0.2)',fontSize:14}}>No media selected</div>
           }
+          {(activeClip?.textOverlays || []).map((o, i) => (
+            <div key={i} style={{
+              position:'absolute', left:`${(o.x??0.5)*100}%`, top:`${(o.y??0.5)*100}%`,
+              transform:'translate(-50%,-50%)', fontSize: o.size==='large'?34:o.size==='small'?18:24,
+              fontWeight:900, color:o.color||'#fff', textAlign:'center', maxWidth:'80%',
+              textShadow: o.style==='shadow'?'0 2px 12px rgba(0,0,0,0.9)':'none',
+              WebkitTextStroke: o.style==='outline'?`1.5px ${o.color==='#FFFFFF'?'#000':'#fff'}`:undefined,
+            }}>{o.text}</div>
+          ))}
         </div>
 
         {/* Gradient vignette */}
@@ -313,7 +298,15 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
           onClose={() => setPanel(null)}/>
       )}
       {panel === 'text' && (
-        <TextPanel onAdd={() => setPanel(null)} onClose={() => setPanel(null)}/>
+        <TextPanel
+          onAdd={(overlay) => {
+            setClips(prev => prev.map((c, i) => i === activeIdx
+              ? { ...c, textOverlays: [...(c.textOverlays || []), { ...overlay, x: 0.5, y: 0.45 + (c.textOverlays?.length || 0) * 0.08 }] }
+              : c))
+            setPanel(null)
+          }}
+          onClose={() => setPanel(null)}
+        />
       )}
       {panel === 'speed' && (
         <SpeedPanel onClose={() => setPanel(null)}/>
@@ -344,7 +337,7 @@ function SoundPanel({ tracks, loading, selected, previewing, musicStart, query, 
         <div style={P.header}>
           <div>
             <div style={{fontSize:16,fontWeight:800}}>🎵 Add Sound</div>
-            <div style={{fontSize:11,color:'#52525B',marginTop:2}}>Royalty-free music by Jamendo</div>
+            <div style={{fontSize:11,color:'#52525B',marginTop:2}}>Royalty-free music library</div>
           </div>
           <button onClick={onClose} style={P.closeBtn}><XIcon/></button>
         </div>
@@ -562,7 +555,7 @@ function TextPanel({ onAdd, onClose }) {
             </div>
           </div>
           {/* Add button */}
-          <button onClick={()=>{if(text.trim())onAdd()}} disabled={!text.trim()}
+          <button onClick={()=>{if(text.trim())onAdd({text:text.trim(),color,size,style})}} disabled={!text.trim()}
             style={{padding:'14px',background:text.trim()?'linear-gradient(135deg,#FF3366,#FF6633)':'rgba(255,255,255,0.05)',border:'none',borderRadius:13,color:'white',fontSize:15,fontWeight:700,cursor:text.trim()?'pointer':'default',fontFamily:'inherit',opacity:text.trim()?1:0.4,boxShadow:text.trim()?'0 4px 20px rgba(255,51,102,0.4)':'none',transition:'all 0.2s'}}>
             Add to Video
           </button>
