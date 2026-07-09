@@ -40,7 +40,7 @@ export default function FeedPostMusic({ post, isVisible }) {
       a.pause()
     }
     return () => { a.pause() }
-  }, [isVisible, post?.music_file_url, post?.music_start_sec, isFeedUnmuted()])
+  }, [isVisible, post?.music_file_url, post?.music_start_sec])
 
   useEffect(() => subscribeFeedAudio(unmuted => {
     const a = audioRef.current

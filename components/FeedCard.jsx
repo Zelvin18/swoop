@@ -10,24 +10,26 @@ import OverlayPortal      from './OverlayPortal'
 
 // ── Deterministic avatar colour ───────────────────────────────────────────────
 function avatarColor(id=''){const C=['#7C3AED','#FF3366','#F97316','#22C55E','#3B82F6','#EC4899','#F59E0B','#06B6D4'];return C[id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%C.length]}
-// Uses MediaSession API + document interaction fallback (same as IG/TikTok)
+// ── Global unmute manager — fires when user presses phone volume up ───────────
 let globalMuteCallbacks = []
+let _globalListenerAttached = false
+
 function registerVideoForUnmute(cb) {
+  // Attach the document listener lazily, only in the browser, only once
+  if (typeof window !== 'undefined' && !_globalListenerAttached) {
+    _globalListenerAttached = true
+    if ('mediaSession' in navigator) {
+      try {
+        navigator.mediaSession.setActionHandler('seekforward', null)
+        navigator.mediaSession.setActionHandler('seekbackward', null)
+      } catch(_) {}
+    }
+    document.addEventListener('volumechange', () => {
+      globalMuteCallbacks.forEach(cb => cb())
+    }, true)
+  }
   globalMuteCallbacks.push(cb)
   return () => { globalMuteCallbacks = globalMuteCallbacks.filter(f => f !== cb) }
-}
-if (typeof window !== 'undefined') {
-  // MediaSession volume key handler
-  if ('mediaSession' in navigator) {
-    try {
-      navigator.mediaSession.setActionHandler('seekforward', null)
-      navigator.mediaSession.setActionHandler('seekbackward', null)
-    } catch(_) {}
-  }
-  // Global document volumechange — some browsers surface this at document level
-  document.addEventListener('volumechange', () => {
-    globalMuteCallbacks.forEach(cb => cb())
-  }, true)
 }
 
 // ── Social post — full-screen Instagram Reels style ───────────────────────────
