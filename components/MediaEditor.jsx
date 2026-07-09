@@ -7,7 +7,10 @@
  * - Floating tool buttons on right side
  */
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { MEDIA_FILTERS } from '../lib/mediaFilters'
+import { MEDIA_FILTERS, getFilterCSS } from '../lib/mediaFilters'
+
+const CLIP_SEC = 3  // seconds per image clip in slideshow
+const FILTERS  = MEDIA_FILTERS  // alias for use in panels
 
 export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
   const [clips,         setClips]         = useState(() => initFiles.map(f => ({ ...f, filter:'Original', textOverlays:[] })))
