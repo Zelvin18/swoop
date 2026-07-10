@@ -41,15 +41,48 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
   const [paused,  setPaused]  = useState(false)
   const [muted,   setMuted]   = useState(true)
   const [musicPlaying, setMusicPlaying] = useState(false)
+  const [slideshowActive, setSlideshowActive] = useState(false)
   const videoRef  = useRef(null)
   const audioRef  = useRef(null)
   const cardRef   = useRef(null)
+  const slideshowTimerRef = useRef(null)
 
   // Play/pause control
   useEffect(() => {
     const v = videoRef.current; if (!v) return
     if (paused) v.pause(); else v.play().catch(()=>{})
   }, [paused])
+
+  // Slideshow for multiple images
+  useEffect(() => {
+    if (!hasImages || p.images.length <= 1 || !slideshowActive) {
+      if (slideshowTimerRef.current) {
+        clearInterval(slideshowTimerRef.current)
+        slideshowTimerRef.current = null
+      }
+      return
+    }
+
+    // Get clip durations from metadata or default to 3 seconds
+    const clipDurations = p.clip_durations || {}
+    const getDuration = (idx) => clipDurations[idx] || 3
+
+    const interval = setInterval(() => {
+      setImgIdx(prev => {
+        const nextIdx = (prev + 1) % p.images.length
+        return nextIdx
+      })
+    }, getDuration(imgIdx) * 1000)
+
+    slideshowTimerRef.current = interval
+
+    return () => {
+      if (slideshowTimerRef.current) {
+        clearInterval(slideshowTimerRef.current)
+        slideshowTimerRef.current = null
+      }
+    }
+  }, [hasImages, p.images.length, slideshowActive, imgIdx, p.clip_durations])
 
   // Volume key → unmute via global manager + video volumechange
   useEffect(() => {
@@ -78,14 +111,19 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
       if (e.isIntersecting) {
         if (v) { v.play().catch(()=>{}); setPaused(false) }
         if (a && p.music_file_url && !isVideo) { a.play().catch(()=>{}); setMusicPlaying(true) }
+        // Start slideshow for multiple images
+        if (hasImages && p.images.length > 1 && !isVideo) {
+          setSlideshowActive(true)
+        }
       } else {
         if (v) { v.pause(); v.muted = true; setMuted(true) }
         if (a) { a.pause(); setMusicPlaying(false) }
+        setSlideshowActive(false)
       }
     }, { threshold: 0.6 })
     obs.observe(card)
     return () => obs.disconnect()
-  }, [isVideo, p.music_file_url])
+  }, [isVideo, p.music_file_url, hasImages, p.images.length])
 
   return (
     <div ref={cardRef} className="feed-card" onDoubleClick={onDoubleTap}
@@ -158,9 +196,9 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
         </button>
       )}
 
-      {/* Music playing indicator for image posts */}
-      {!isVideo && p.music_file_url && (
-        <button
+      {/* Music marquee for image posts */}
+      {!isVideo && (p.music_title || p.music_artist) && (
+        <div 
           onClick={(e) => {
             e.stopPropagation()
             const a = audioRef.current
@@ -174,11 +212,45 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
               }
             }
           }}
-          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:musicPlaying?'rgba(255,51,102,0.55)':'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}
+          style={{
+            position:'absolute',
+            top:'calc(env(safe-area-inset-top,0px)+58px)',
+            left:14,
+            right:14,
+            display:'flex',
+            alignItems:'center',
+            gap:8,
+            background:musicPlaying?'rgba(255,51,102,0.55)':'rgba(0,0,0,0.55)',
+            backdropFilter:'blur(6px)',
+            border:'1px solid rgba(255,255,255,0.15)',
+            borderRadius:20,
+            padding:'6px 12px',
+            cursor:'pointer',
+            zIndex:17,
+            color:'white',
+            fontSize:11,
+            fontWeight:600,
+            letterSpacing:'-0.2px',
+            boxShadow:'0 2px 8px rgba(0,0,0,0.4)',
+            overflow:'hidden'
+          }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          {musicPlaying ? 'Playing' : 'Tap to play'}
-        </button>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" style={{flexShrink:0}}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <div style={{
+            flex:1,
+            overflow:'hidden',
+            whiteSpace:'nowrap',
+            position:'relative'
+          }}>
+            <div style={{
+              display:'inline-block',
+              animation:musicPlaying ? 'marquee 8s linear infinite' : 'none',
+              paddingLeft:'100%'
+            }}>
+              {p.music_title && p.music_artist ? `${p.music_title} · ${p.music_artist}` : p.music_title || p.music_artist}
+            </div>
+          </div>
+        </div>
       )}
 
       <FeedActionRail
@@ -211,14 +283,46 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
   const [paused,  setPaused]  = useState(false)
   const [imgIdx,  setImgIdx]  = useState(0)
   const [musicPlaying, setMusicPlaying] = useState(false)
+  const [slideshowActive, setSlideshowActive] = useState(false)
   const videoRef  = useRef(null)
   const audioRef  = useRef(null)
   const cardRef   = useRef(null)
+  const slideshowTimerRef = useRef(null)
 
   useEffect(()=>{
     const v = videoRef.current; if (!v) return
     if (paused) v.pause(); else v.play().catch(()=>{})
   }, [paused])
+
+  // Slideshow for multiple images
+  useEffect(() => {
+    if (!hasImages || p.images.length <= 1 || !slideshowActive) {
+      if (slideshowTimerRef.current) {
+        clearInterval(slideshowTimerRef.current)
+        slideshowTimerRef.current = null
+      }
+      return
+    }
+
+    const clipDurations = p.clip_durations || {}
+    const getDuration = (idx) => clipDurations[idx] || 3
+
+    const interval = setInterval(() => {
+      setImgIdx(prev => {
+        const nextIdx = (prev + 1) % p.images.length
+        return nextIdx
+      })
+    }, getDuration(imgIdx) * 1000)
+
+    slideshowTimerRef.current = interval
+
+    return () => {
+      if (slideshowTimerRef.current) {
+        clearInterval(slideshowTimerRef.current)
+        slideshowTimerRef.current = null
+      }
+    }
+  }, [hasImages, p.images.length, slideshowActive, imgIdx, p.clip_durations])
 
   // Volume key → unmute via global manager
   useEffect(()=>{
@@ -243,14 +347,19 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
       if (e.isIntersecting) {
         if (v) { v.play().catch(()=>{}); setPaused(false) }
         if (a && p.music_file_url && !isVideo) { a.play().catch(()=>{}); setMusicPlaying(true) }
+        // Start slideshow for multiple images
+        if (hasImages && p.images.length > 1 && !isVideo) {
+          setSlideshowActive(true)
+        }
       } else {
         if (v) { v.pause(); v.muted=true; setMuted(true) }
         if (a) { a.pause(); setMusicPlaying(false) }
+        setSlideshowActive(false)
       }
     }, { threshold:0.6 })
     obs.observe(card)
     return () => obs.disconnect()
-  }, [isVideo, p.music_file_url])
+  }, [isVideo, p.music_file_url, hasImages, p.images.length])
 
   return (
     <div ref={cardRef} className={`feed-card${paused?' paused':''}`} onDoubleClick={onDoubleTap}>
@@ -320,9 +429,9 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
         </button>
       )}
 
-      {/* Music playing indicator for image posts */}
-      {!isVideo && p.music_file_url && (
-        <button
+      {/* Music marquee for image posts */}
+      {!isVideo && (p.music_title || p.music_artist) && (
+        <div 
           onClick={(e) => {
             e.stopPropagation()
             const a = audioRef.current
@@ -336,11 +445,45 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
               }
             }
           }}
-          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:musicPlaying?'rgba(255,51,102,0.55)':'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}
+          style={{
+            position:'absolute',
+            top:'calc(env(safe-area-inset-top,0px)+58px)',
+            left:14,
+            right:14,
+            display:'flex',
+            alignItems:'center',
+            gap:8,
+            background:musicPlaying?'rgba(255,51,102,0.55)':'rgba(0,0,0,0.55)',
+            backdropFilter:'blur(6px)',
+            border:'1px solid rgba(255,255,255,0.15)',
+            borderRadius:20,
+            padding:'6px 12px',
+            cursor:'pointer',
+            zIndex:17,
+            color:'white',
+            fontSize:11,
+            fontWeight:600,
+            letterSpacing:'-0.2px',
+            boxShadow:'0 2px 8px rgba(0,0,0,0.4)',
+            overflow:'hidden'
+          }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          {musicPlaying ? 'Playing' : 'Tap to play'}
-        </button>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" style={{flexShrink:0}}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <div style={{
+            flex:1,
+            overflow:'hidden',
+            whiteSpace:'nowrap',
+            position:'relative'
+          }}>
+            <div style={{
+              display:'inline-block',
+              animation:musicPlaying ? 'marquee 8s linear infinite' : 'none',
+              paddingLeft:'100%'
+            }}>
+              {p.music_title && p.music_artist ? `${p.music_title} · ${p.music_artist}` : p.music_title || p.music_artist}
+            </div>
+          </div>
+        </div>
       )}
 
       <FeedActionRail
@@ -402,11 +545,13 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   const [muted,       setMuted]       = useState(true)
   const [imgIdx,      setImgIdx]      = useState(0)
   const [musicPlaying, setMusicPlaying] = useState(false)
+  const [slideshowActive, setSlideshowActive] = useState(false)
   const [showSellerProfile, setShowSellerProfile] = useState(false)
   const heartTimer  = useRef(null)
   const videoRef    = useRef(null)
   const audioRef    = useRef(null)
   const productRef  = useRef(null)
+  const slideshowTimerRef = useRef(null)
 
   const seller      = p.seller || {}
   const sellerColor = avatarColor(seller.id||'')
@@ -434,6 +579,37 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
     if (paused) v.pause(); else v.play().catch(()=>{})
   }, [paused])
 
+  // Slideshow for multiple images in product posts
+  useEffect(() => {
+    const hasImages = p.images?.length > 0
+    if (!hasImages || p.images.length <= 1 || !slideshowActive || isProductVideo) {
+      if (slideshowTimerRef.current) {
+        clearInterval(slideshowTimerRef.current)
+        slideshowTimerRef.current = null
+      }
+      return
+    }
+
+    const clipDurations = p.clip_durations || {}
+    const getDuration = (idx) => clipDurations[idx] || 3
+
+    const interval = setInterval(() => {
+      setImgIdx(prev => {
+        const nextIdx = (prev + 1) % p.images.length
+        return nextIdx
+      })
+    }, getDuration(imgIdx) * 1000)
+
+    slideshowTimerRef.current = interval
+
+    return () => {
+      if (slideshowTimerRef.current) {
+        clearInterval(slideshowTimerRef.current)
+        slideshowTimerRef.current = null
+      }
+    }
+  }, [p.images, slideshowActive, imgIdx, p.clip_durations, isProductVideo])
+
   useEffect(()=>{
     const v = videoRef.current; if (!v || !isProductVideo) return
     const unregister = registerVideoForUnmute(() => {
@@ -455,14 +631,20 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
       if (e.isIntersecting){
         if (v && isProductVideo) { v.play().catch(()=>{}); setPaused(false) }
         if (a && p.music_file_url && !isProductVideo) { a.play().catch(()=>{}); setMusicPlaying(true) }
+        // Start slideshow for multiple images
+        const hasImages = p.images?.length > 0
+        if (hasImages && p.images.length > 1 && !isProductVideo) {
+          setSlideshowActive(true)
+        }
       } else {
         if (v) { v.pause(); v.muted=true; setMuted(true) }
         if (a) { a.pause(); setMusicPlaying(false) }
+        setSlideshowActive(false)
       }
     }, { threshold:0.6 })
     obs.observe(card)
     return () => obs.disconnect()
-  }, [isProductVideo, p.music_file_url])
+  }, [isProductVideo, p.music_file_url, p.images])
 
   const handleLike = async () => {
     if (!currentUser) return
@@ -680,9 +862,9 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
         </button>
       )}
 
-      {/* Music playing indicator for image posts */}
-      {!isVideo && p.music_file_url && (
-        <button
+      {/* Music marquee for image posts */}
+      {!isVideo && (p.music_title || p.music_artist) && (
+        <div 
           onClick={(e) => {
             e.stopPropagation()
             const a = audioRef.current
@@ -696,11 +878,45 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
               }
             }
           }}
-          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:musicPlaying?'rgba(255,51,102,0.55)':'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}
+          style={{
+            position:'absolute',
+            top:'calc(env(safe-area-inset-top,0px)+58px)',
+            left:14,
+            right:14,
+            display:'flex',
+            alignItems:'center',
+            gap:8,
+            background:musicPlaying?'rgba(255,51,102,0.55)':'rgba(0,0,0,0.55)',
+            backdropFilter:'blur(6px)',
+            border:'1px solid rgba(255,255,255,0.15)',
+            borderRadius:20,
+            padding:'6px 12px',
+            cursor:'pointer',
+            zIndex:17,
+            color:'white',
+            fontSize:11,
+            fontWeight:600,
+            letterSpacing:'-0.2px',
+            boxShadow:'0 2px 8px rgba(0,0,0,0.4)',
+            overflow:'hidden'
+          }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          {musicPlaying ? 'Playing' : 'Tap to play'}
-        </button>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" style={{flexShrink:0}}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          <div style={{
+            flex:1,
+            overflow:'hidden',
+            whiteSpace:'nowrap',
+            position:'relative'
+          }}>
+            <div style={{
+              display:'inline-block',
+              animation:musicPlaying ? 'marquee 8s linear infinite' : 'none',
+              paddingLeft:'100%'
+            }}>
+              {p.music_title && p.music_artist ? `${p.music_title} · ${p.music_artist}` : p.music_title || p.music_artist}
+            </div>
+          </div>
+        </div>
       )}
 
       <FeedActionRail
@@ -725,14 +941,13 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
             {fmtDistance(distanceKm)}
           </div>
         )}
-        {p.title&&<div className="feed-product-title">{p.title}</div>}
-        {p.description&&<div className="feed-product-desc">{p.description}</div>}
-        {(p.music_title || p.music_artist) && <FeedMusicPill title={p.music_title} artist={p.music_artist} />}
         {p.is_hot && (
           <div style={{display:'inline-flex',alignItems:'center',gap:5,marginBottom:6,background:'linear-gradient(135deg,#FF3366,#F97316)',borderRadius:20,padding:'3px 10px',fontSize:10,fontWeight:800,color:'white'}}>
             🔥 Hot Deal
           </div>
         )}
+        {p.title&&<div className="feed-product-title">{p.title}</div>}
+        {p.description&&<div className="feed-product-desc">{p.description}</div>}
         {priceStr&&(
           <div className="feed-price-row">
             <span className="feed-price">{priceStr}</span>
@@ -760,7 +975,7 @@ function HeartFlash() {
   return (
     <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',zIndex:30,pointerEvents:'none'}}>
       <i className="fas fa-heart" style={{fontSize:80,color:'white',filter:'drop-shadow(0 4px 20px rgba(0,0,0,0.5))',animation:'heartPop 0.8s ease forwards'}}/>
-      <style>{`@keyframes heartPop{0%{opacity:0;transform:scale(0.3)}30%{opacity:1;transform:scale(1.2)}60%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.1)}}`}</style>
+      <style>{`@keyframes heartPop{0%{opacity:0;transform:scale(0.3)}30%{opacity:1;transform:scale(1.2)}60%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.1)}}@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}`}</style>
     </div>
   )
 }

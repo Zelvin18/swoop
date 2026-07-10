@@ -125,7 +125,7 @@ export default function FeedPage({ showToast, onTabChange, currentUser, refreshT
           let next = [...prev]
           for (const item of completed) {
             if (!next.some(p => p.id === item.post.id)) {
-              next = [{ ...item.post, seller: item.post.seller || item.seller }, ...next]
+              next = [...next, { ...item.post, seller: item.post.seller || item.seller }]
             }
           }
           return next

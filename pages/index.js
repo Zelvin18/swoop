@@ -9,6 +9,7 @@ import LivePage from '../components/LivePage'
 import AddPostModal from '../components/AddPostModal'
 import Toast from '../components/Toast'
 import { supabase } from '../lib/supabase'
+import { pauseAllMedia, resumeVisibleMedia } from '../lib/mediaPlayback'
 
 export default function Home() {
   const router = useRouter()
@@ -46,6 +47,14 @@ export default function Home() {
 
   const handleNav = (tab) => {
     if (tab === 'add') { setShowAddPost(true); return }
+    // Pause all media when navigating away from feed
+    if (activeTab === 'home' && tab !== 'home') {
+      pauseAllMedia()
+    }
+    // Resume media when returning to feed
+    if (tab === 'home' && activeTab !== 'home') {
+      setTimeout(() => resumeVisibleMedia(), 100)
+    }
     setActiveTab(tab)
   }
 

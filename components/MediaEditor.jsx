@@ -29,6 +29,8 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
   const [musicGenre,    setMusicGenre]    = useState('All')
   const [clipDurations, setClipDurations] = useState({}) // Store actual durations for videos
   const [draggingOverlay, setDraggingOverlay] = useState(null) // Track which overlay is being dragged
+  const [selectedOverlay, setSelectedOverlay] = useState(null) // Track which overlay is selected for editing
+  const [resizingOverlay, setResizingOverlay] = useState(null) // Track which overlay is being resized
 
   const timerRef   = useRef(null)
   const audioRef   = useRef(null)
@@ -215,6 +217,10 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
           {(activeClip?.textOverlays || []).map((o, i) => (
             <div 
               key={i} 
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelectedOverlay(i)
+              }}
               style={{
                 position:'absolute', left:`${(o.x??0.5)*100}%`, top:`${(o.y??0.5)*100}%`,
                 transform:'translate(-50%,-50%)', fontSize: o.size==='large'?34:o.size==='small'?18:24,
@@ -223,10 +229,16 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
                 WebkitTextStroke: o.style==='outline'?`1.5px ${o.color==='#FFFFFF'?'#000':'#fff'}`:undefined,
                 cursor:draggingOverlay === i ? 'grabbing' : 'grab',
                 userSelect:'none',
+                border:selectedOverlay === i ? '2px dashed #FF3366' : '2px solid transparent',
+                padding: selectedOverlay === i ? '8px' : '0',
+                borderRadius: 4,
+                transition: 'border-color 0.15s, padding 0.15s'
               }}
               onMouseDown={(e) => {
+                if (e.target.dataset.resizeHandle) return // Don't drag if clicking resize handle
                 e.stopPropagation()
                 setDraggingOverlay(i)
+                setSelectedOverlay(i)
                 const startX = e.clientX
                 const startY = e.clientY
                 const container = e.currentTarget.parentElement
@@ -235,8 +247,8 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
                 const handleMouseMove = (moveEvent) => {
                   const deltaX = (moveEvent.clientX - startX) / rect.width
                   const deltaY = (moveEvent.clientY - startY) / rect.height
-                  const newX = Math.max(0.1, Math.min(0.9, (o.x ?? 0.5) + deltaX))
-                  const newY = Math.max(0.1, Math.min(0.9, (o.y ?? 0.5) + deltaY))
+                  const newX = Math.max(0.05, Math.min(0.95, (o.x ?? 0.5) + deltaX))
+                  const newY = Math.max(0.05, Math.min(0.95, (o.y ?? 0.5) + deltaY))
                   
                   setClips(prev => prev.map((c, idx) => 
                     idx === activeIdx 
@@ -260,8 +272,10 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
                 document.addEventListener('mouseup', handleMouseUp)
               }}
               onTouchStart={(e) => {
+                if (e.target.dataset.resizeHandle) return
                 e.stopPropagation()
                 setDraggingOverlay(i)
+                setSelectedOverlay(i)
                 const touch = e.touches[0]
                 const startX = touch.clientX
                 const startY = touch.clientY
@@ -272,8 +286,8 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
                   const moveTouch = moveEvent.touches[0]
                   const deltaX = (moveTouch.clientX - startX) / rect.width
                   const deltaY = (moveTouch.clientY - startY) / rect.height
-                  const newX = Math.max(0.1, Math.min(0.9, (o.x ?? 0.5) + deltaX))
-                  const newY = Math.max(0.1, Math.min(0.9, (o.y ?? 0.5) + deltaY))
+                  const newX = Math.max(0.05, Math.min(0.95, (o.x ?? 0.5) + deltaX))
+                  const newY = Math.max(0.05, Math.min(0.95, (o.y ?? 0.5) + deltaY))
                   
                   setClips(prev => prev.map((c, idx) => 
                     idx === activeIdx 
@@ -298,6 +312,101 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
               }}
             >
               {o.text}
+              {/* Resize handles when selected */}
+              {selectedOverlay === i && (
+                <>
+                  <div 
+                    data-resize-handle="se"
+                    onMouseDown={(e) => {
+                      e.stopPropagation()
+                      setResizingOverlay(i)
+                      const startY = e.clientY
+                      const startFontSize = o.size==='large'?34:o.size==='small'?18:24
+                      
+                      const handleResizeMove = (moveEvent) => {
+                        const deltaY = moveEvent.clientY - startY
+                        const newFontSize = Math.max(12, Math.min(72, startFontSize + deltaY / 2))
+                        const newSize = newFontSize > 30 ? 'large' : newFontSize < 20 ? 'small' : 'medium'
+                        
+                        setClips(prev => prev.map((c, idx) => 
+                          idx === activeIdx 
+                            ? { 
+                                ...c, 
+                                textOverlays: c.textOverlays.map((overlay, oi) => 
+                                  oi === o ? { ...overlay, size: newSize } : overlay
+                                ) 
+                              } 
+                            : c
+                        ))
+                      }
+                      
+                      const handleResizeUp = () => {
+                        setResizingOverlay(null)
+                        document.removeEventListener('mousemove', handleResizeMove)
+                        document.removeEventListener('mouseup', handleResizeUp)
+                      }
+                      
+                      document.addEventListener('mousemove', handleResizeMove)
+                      document.addEventListener('mouseup', handleResizeUp)
+                    }}
+                    style={{
+                      position:'absolute',
+                      bottom: -8,
+                      right: -8,
+                      width: 16,
+                      height: 16,
+                      background: '#FF3366',
+                      border: '2px solid white',
+                      borderRadius: '50%',
+                      cursor: 'se-resize',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                    }}
+                  >
+                    <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                      <path d="M15 3l6 6-6 6"/>
+                      <path d="M18 6l-6 6"/>
+                    </svg>
+                  </div>
+                  {/* Delete button */}
+                  <div 
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setClips(prev => prev.map((c, idx) => 
+                        idx === activeIdx 
+                          ? { 
+                              ...c, 
+                              textOverlays: c.textOverlays.filter((_, oi) => oi !== i)
+                            } 
+                          : c
+                      ))
+                      setSelectedOverlay(null)
+                    }}
+                    style={{
+                      position:'absolute',
+                      top: -12,
+                      right: -12,
+                      width: 24,
+                      height: 24,
+                      background: '#EF4444',
+                      border: '2px solid white',
+                      borderRadius: '50%',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.3)'
+                    }}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
+                      <line x1="18" y1="6" x2="6" y2="18"/>
+                      <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>
