@@ -9,11 +9,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { MEDIA_FILTERS, getFilterCSS } from '../lib/mediaFilters'
 
-const CLIP_SEC = 3  // seconds per image clip in slideshow
+const CLIP_SEC = 3  // default seconds per image clip in slideshow
+const MAX_VIDEO_DUR = 300  // max 5 minutes for videos
 const FILTERS  = MEDIA_FILTERS  // alias for use in panels
 
 export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
-  const [clips,         setClips]         = useState(() => initFiles.map(f => ({ ...f, filter:'Original', textOverlays:[] })))
+  const [clips,         setClips]         = useState(() => initFiles.map(f => ({ ...f, filter:'Original', textOverlays:[], duration: f.type === 'video' ? 0 : CLIP_SEC })))
   const [activeIdx,     setActiveIdx]     = useState(0)
   const [playing,       setPlaying]       = useState(false)
   const [currentTime,   setCurrentTime]   = useState(0)
@@ -23,22 +24,46 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
   const [previewTrack,  setPreviewTrack]  = useState(null)
   const [loadingTracks, setLoadingTracks] = useState(false)
   const [musicStart,    setMusicStart]    = useState(0)
+  const [musicDuration, setMusicDuration] = useState(60) // Music clip duration in seconds
   const [musicQuery,    setMusicQuery]    = useState('')
   const [musicGenre,    setMusicGenre]    = useState('All')
+  const [clipDurations, setClipDurations] = useState({}) // Store actual durations for videos
+  const [draggingOverlay, setDraggingOverlay] = useState(null) // Track which overlay is being dragged
 
   const timerRef   = useRef(null)
   const audioRef   = useRef(null)
   const addMoreRef = useRef(null)
-  const totalDur   = clips.length * CLIP_SEC
+  
+  // Calculate total duration based on clip types
+  const totalDur = clips.reduce((sum, clip, idx) => {
+    if (clip.type === 'video') {
+      return sum + (clipDurations[idx] || clip.duration || CLIP_SEC)
+    }
+    return sum + (clip.duration || CLIP_SEC)
+  }, 0)
 
   const activeClip = clips[activeIdx]
   const filterCSS  = FILTERS.find(f => f.name === (activeClip?.filter || 'Original'))?.css || ''
 
-  // Auto-play on mount
+  // Auto-play on mount and detect video durations
   useEffect(() => {
     const t = setTimeout(() => startPlayback(), 500)
+    
+    // Detect video durations
+    clips.forEach((clip, idx) => {
+      if (clip.type === 'video' && clip.url && !clipDurations[idx]) {
+        const video = document.createElement('video')
+        video.src = clip.url
+        video.onloadedmetadata = () => {
+          const duration = Math.min(video.duration, MAX_VIDEO_DUR)
+          setClipDurations(prev => ({ ...prev, [idx]: duration }))
+          setClips(prev => prev.map((c, i) => i === idx ? { ...c, duration } : c))
+        }
+      }
+    })
+    
     return () => { clearTimeout(t); clearInterval(timerRef.current) }
-  }, [])
+  }, [clips.length])
 
   const stopPlayback = useCallback(() => {
     clearInterval(timerRef.current)
@@ -57,13 +82,27 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
     }
     setPlaying(true)
     setCurrentTime(t)
+    
+    // Calculate which clip should be active based on time
+    const calculateActiveIdx = (time) => {
+      let accumulated = 0
+      for (let i = 0; i < clips.length; i++) {
+        const clipDur = clips[i].type === 'video' 
+          ? (clipDurations[i] || clips[i].duration || CLIP_SEC)
+          : (clips[i].duration || CLIP_SEC)
+        if (time < accumulated + clipDur) return i
+        accumulated += clipDur
+      }
+      return clips.length - 1
+    }
+    
     timerRef.current = setInterval(() => {
       t = t + 0.05
       if (t >= totalDur) t = 0
       setCurrentTime(t)
-      setActiveIdx(Math.floor(t / CLIP_SEC) % clips.length)
+      setActiveIdx(calculateActiveIdx(t))
     }, 50)
-  }, [selectedTrack, musicStart, totalDur, clips.length])
+  }, [selectedTrack, musicStart, totalDur, clips.length, clips, clipDurations])
 
   const togglePlay = () => playing ? stopPlayback() : startPlayback(currentTime)
 
@@ -113,7 +152,7 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
   const handleAddMore = (e) => {
     const newFiles = Array.from(e.target.files || []).slice(0, 10 - clips.length)
     if (!newFiles.length) return
-    const newClips = newFiles.map(f => ({ url: URL.createObjectURL(f), file: f, type: f.type.startsWith('video') ? 'video' : 'photo', filter: 'Original', textOverlays: [] }))
+    const newClips = newFiles.map(f => ({ url: URL.createObjectURL(f), file: f, type: f.type.startsWith('video') ? 'video' : 'photo', filter: 'Original', textOverlays: [], duration: f.type.startsWith('video') ? 0 : CLIP_SEC }))
     setClips(prev => [...prev, ...newClips])
     e.target.value = ''
   }
@@ -125,6 +164,7 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
       mediaFiles: clips,
       selectedTrack,
       musicStart,
+      musicDuration,
       perClipFilters: clips.map(c => c.filter),
       filter: clips[0]?.filter || 'Original',
       textOverlays: allOverlays,
@@ -173,13 +213,92 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
               : <div style={{color:'rgba(255,255,255,0.2)',fontSize:14}}>No media selected</div>
           }
           {(activeClip?.textOverlays || []).map((o, i) => (
-            <div key={i} style={{
-              position:'absolute', left:`${(o.x??0.5)*100}%`, top:`${(o.y??0.5)*100}%`,
-              transform:'translate(-50%,-50%)', fontSize: o.size==='large'?34:o.size==='small'?18:24,
-              fontWeight:900, color:o.color||'#fff', textAlign:'center', maxWidth:'80%',
-              textShadow: o.style==='shadow'?'0 2px 12px rgba(0,0,0,0.9)':'none',
-              WebkitTextStroke: o.style==='outline'?`1.5px ${o.color==='#FFFFFF'?'#000':'#fff'}`:undefined,
-            }}>{o.text}</div>
+            <div 
+              key={i} 
+              style={{
+                position:'absolute', left:`${(o.x??0.5)*100}%`, top:`${(o.y??0.5)*100}%`,
+                transform:'translate(-50%,-50%)', fontSize: o.size==='large'?34:o.size==='small'?18:24,
+                fontWeight:900, color:o.color||'#fff', textAlign:'center', maxWidth:'80%',
+                textShadow: o.style==='shadow'?'0 2px 12px rgba(0,0,0,0.9)':'none',
+                WebkitTextStroke: o.style==='outline'?`1.5px ${o.color==='#FFFFFF'?'#000':'#fff'}`:undefined,
+                cursor:draggingOverlay === i ? 'grabbing' : 'grab',
+                userSelect:'none',
+              }}
+              onMouseDown={(e) => {
+                e.stopPropagation()
+                setDraggingOverlay(i)
+                const startX = e.clientX
+                const startY = e.clientY
+                const container = e.currentTarget.parentElement
+                const rect = container.getBoundingClientRect()
+                
+                const handleMouseMove = (moveEvent) => {
+                  const deltaX = (moveEvent.clientX - startX) / rect.width
+                  const deltaY = (moveEvent.clientY - startY) / rect.height
+                  const newX = Math.max(0.1, Math.min(0.9, (o.x ?? 0.5) + deltaX))
+                  const newY = Math.max(0.1, Math.min(0.9, (o.y ?? 0.5) + deltaY))
+                  
+                  setClips(prev => prev.map((c, idx) => 
+                    idx === activeIdx 
+                      ? { 
+                          ...c, 
+                          textOverlays: c.textOverlays.map((overlay, oi) => 
+                            oi === o ? { ...overlay, x: newX, y: newY } : overlay
+                          ) 
+                        } 
+                      : c
+                  ))
+                }
+                
+                const handleMouseUp = () => {
+                  setDraggingOverlay(null)
+                  document.removeEventListener('mousemove', handleMouseMove)
+                  document.removeEventListener('mouseup', handleMouseUp)
+                }
+                
+                document.addEventListener('mousemove', handleMouseMove)
+                document.addEventListener('mouseup', handleMouseUp)
+              }}
+              onTouchStart={(e) => {
+                e.stopPropagation()
+                setDraggingOverlay(i)
+                const touch = e.touches[0]
+                const startX = touch.clientX
+                const startY = touch.clientY
+                const container = e.currentTarget.parentElement
+                const rect = container.getBoundingClientRect()
+                
+                const handleTouchMove = (moveEvent) => {
+                  const moveTouch = moveEvent.touches[0]
+                  const deltaX = (moveTouch.clientX - startX) / rect.width
+                  const deltaY = (moveTouch.clientY - startY) / rect.height
+                  const newX = Math.max(0.1, Math.min(0.9, (o.x ?? 0.5) + deltaX))
+                  const newY = Math.max(0.1, Math.min(0.9, (o.y ?? 0.5) + deltaY))
+                  
+                  setClips(prev => prev.map((c, idx) => 
+                    idx === activeIdx 
+                      ? { 
+                          ...c, 
+                          textOverlays: c.textOverlays.map((overlay, oi) => 
+                            oi === o ? { ...overlay, x: newX, y: newY } : overlay
+                          ) 
+                        } 
+                      : c
+                  ))
+                }
+                
+                const handleTouchEnd = () => {
+                  setDraggingOverlay(null)
+                  document.removeEventListener('touchmove', handleTouchMove)
+                  document.removeEventListener('touchend', handleTouchEnd)
+                }
+                
+                document.addEventListener('touchmove', handleTouchMove)
+                document.addEventListener('touchend', handleTouchEnd)
+              }}
+            >
+              {o.text}
+            </div>
           ))}
         </div>
 
@@ -200,6 +319,7 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
           {[
             { id:'filters', label:'Filter', icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg> },
             { id:'text',    label:'Text',   icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8"><polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/></svg> },
+            { id:'duration',label:'Duration',icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
             { id:'speed',   label:'Speed',  icon:<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.8" strokeLinecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> },
           ].map(({ id, label, icon }) => (
             <button key={id} onClick={() => setPanel(p => p === id ? null : id)} style={{width:46,height:46,borderRadius:14,background:panel===id?'rgba(255,51,102,0.3)':'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',border:`1.5px solid ${panel===id?'rgba(255,51,102,0.7)':'rgba(255,255,255,0.18)'}`,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:2,cursor:'pointer',transition:'all 0.15s',boxShadow:panel===id?'0 0 16px rgba(255,51,102,0.4)':'none'}}>
@@ -292,10 +412,10 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
         <SoundPanel
           tracks={tracks} loading={loadingTracks}
           selected={selectedTrack} previewing={previewTrack}
-          musicStart={musicStart} totalDur={totalDur}
+          musicStart={musicStart} musicDuration={musicDuration} totalDur={totalDur}
           query={musicQuery} genre={musicGenre}
           onQueryChange={setMusicQuery} onGenreChange={setMusicGenre}
-          onMusicStartChange={setMusicStart}
+          onMusicStartChange={setMusicStart} onMusicDurationChange={setMusicDuration}
           onSelect={t => { setSelectedTrack(t); setPreviewTrack(null); if(audioRef.current) audioRef.current.pause() }}
           onPreview={handlePreviewTrack}
           onClose={() => setPanel(null)}/>
@@ -304,7 +424,7 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
         <TextPanel
           onAdd={(overlay) => {
             setClips(prev => prev.map((c, i) => i === activeIdx
-              ? { ...c, textOverlays: [...(c.textOverlays || []), { ...overlay, x: 0.5, y: 0.45 + (c.textOverlays?.length || 0) * 0.08 }] }
+              ? { ...c, textOverlays: [...(c.textOverlays || []), { ...overlay, x: 0.5, y: 0.5 }] }
               : c))
             setPanel(null)
           }}
@@ -313,6 +433,20 @@ export default function MediaEditor({ mediaFiles: initFiles, onDone, onBack }) {
       )}
       {panel === 'speed' && (
         <SpeedPanel onClose={() => setPanel(null)}/>
+      )}
+      {panel === 'duration' && (
+        <DurationPanel 
+          clip={activeClip} 
+          clipIndex={activeIdx}
+          totalClips={clips.length}
+          currentDuration={activeClip?.duration || CLIP_SEC}
+          isVideo={activeClip?.type === 'video'}
+          videoDuration={clipDurations[activeIdx]}
+          onDurationChange={(dur) => {
+            setClips(prev => prev.map((c, i) => i === activeIdx ? { ...c, duration: dur } : c))
+          }}
+          onClose={() => setPanel(null)}
+        />
       )}
 
       <style>{`
@@ -331,7 +465,7 @@ const CS = {
 }
 
 // ── SOUND PANEL ────────────────────────────────────────────────────────────
-function SoundPanel({ tracks, loading, selected, previewing, musicStart, query, genre, onQueryChange, onGenreChange, onMusicStartChange, onSelect, onPreview, onClose }) {
+function SoundPanel({ tracks, loading, selected, previewing, musicStart, musicDuration, totalDur, query, genre, onQueryChange, onGenreChange, onMusicStartChange, onMusicDurationChange, onSelect, onPreview, onClose }) {
   const GENRES = ['All','Pop','Electronic','Ambient','Hip-Hop','Rock','Jazz','Classical']
   return (
     <div style={P.overlay}>
@@ -404,6 +538,15 @@ function SoundPanel({ tracks, loading, selected, previewing, musicStart, query, 
               style={{width:'100%',accentColor:'#FF3366',height:4,cursor:'pointer'}}/>
             <div style={{display:'flex',justifyContent:'space-between',marginTop:6,fontSize:10,color:'#52525B',fontVariantNumeric:'tabular-nums'}}>
               <span>{fmtTime(musicStart)}</span><span>{fmtTime(selected.duration_sec||60)}</span>
+            </div>
+            
+            {/* Music duration slider */}
+            <div style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.3)',letterSpacing:1.2,marginTop:16,marginBottom:8}}>MUSIC CLIP DURATION</div>
+            <input type="range" min={5} max={Math.min(selected.duration_sec||60, totalDur || 60)} value={musicDuration}
+              onChange={e=>onMusicDurationChange(Number(e.target.value))}
+              style={{width:'100%',accentColor:'#FF3366',height:4,cursor:'pointer'}}/>
+            <div style={{display:'flex',justifyContent:'space-between',marginTop:6,fontSize:10,color:'#52525B',fontVariantNumeric:'tabular-nums'}}>
+              <span>{fmtTime(musicDuration)}</span><span>{fmtTime(Math.min(selected.duration_sec||60, totalDur || 60))}</span>
             </div>
           </div>
         )}
@@ -591,6 +734,114 @@ function SpeedPanel({ onClose }) {
           <div style={{marginTop:16,textAlign:'center',fontSize:12,color:'rgba(255,255,255,0.3)'}}>
             {speed < 1 ? 'Slow motion' : speed > 1 ? 'Fast forward' : 'Normal speed'}
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── DURATION PANEL ─────────────────────────────────────────────────────────
+function DurationPanel({ clip, clipIndex, totalClips, currentDuration, isVideo, videoDuration, onDurationChange, onClose }) {
+  const [duration, setDuration] = useState(currentDuration)
+  
+  const minDur = isVideo ? 1 : 0.5
+  const maxDur = isVideo ? (videoDuration || MAX_VIDEO_DUR) : 60
+  const step = isVideo ? 0.1 : 0.5
+  
+  const handleSliderChange = (e) => {
+    const val = parseFloat(e.target.value)
+    setDuration(val)
+    onDurationChange(val)
+  }
+  
+  const presetDurations = isVideo 
+    ? [5, 10, 15, 30, 60, 120, 180, 300].filter(d => d <= maxDur)
+    : [1, 2, 3, 5, 10, 15, 30, 60]
+  
+  return (
+    <div style={P.overlay}>
+      <div style={{...P.sheet,maxHeight:'50%'}}>
+        <div style={P.handle}/>
+        <div style={P.header}>
+          <div>
+            <div style={{fontSize:16,fontWeight:800}}>⏱ Duration</div>
+            <div style={{fontSize:11,color:'#52525B',marginTop:2}}>
+              {totalClips > 1 ? `Clip ${clipIndex + 1} of ${totalClips}` : 'Clip duration'}
+            </div>
+          </div>
+          <button onClick={onClose} style={P.closeBtn}><XIcon/></button>
+        </div>
+        
+        <div style={{padding:'0 16px 24px'}}>
+          {/* Current duration display */}
+          <div style={{textAlign:'center',marginBottom:20}}>
+            <div style={{fontSize:48,fontWeight:900,color:'#FF3366',fontVariantNumeric:'tabular-nums',lineHeight:1}}>
+              {fmtTime(duration)}
+            </div>
+            <div style={{fontSize:12,color:'#52525B',marginTop:4}}>
+              {isVideo 
+                ? `Video length: ${videoDuration ? fmtTime(videoDuration) : 'Loading...'}`
+                : 'Image display time'
+              }
+            </div>
+          </div>
+          
+          {/* Duration slider */}
+          <div style={{marginBottom:24}}>
+            <input 
+              type="range" 
+              min={minDur} 
+              max={maxDur} 
+              step={step} 
+              value={duration}
+              onChange={handleSliderChange}
+              style={{width:'100%',accentColor:'#FF3366',height:6,cursor:'pointer'}}
+            />
+            <div style={{display:'flex',justifyContent:'space-between',marginTop:8,fontSize:11,color:'#52525B',fontVariantNumeric:'tabular-nums'}}>
+              <span>{fmtTime(minDur)}</span>
+              <span>{fmtTime(maxDur)}</span>
+            </div>
+          </div>
+          
+          {/* Quick presets */}
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:'rgba(255,255,255,0.3)',letterSpacing:1.2,marginBottom:10}}>
+              QUICK SET
+            </div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              {presetDurations.map(d => (
+                <button
+                  key={d}
+                  onClick={() => {
+                    setDuration(d)
+                    onDurationChange(d)
+                  }}
+                  style={{
+                    padding:'8px 14px',
+                    borderRadius:10,
+                    fontSize:12,
+                    fontWeight:700,
+                    cursor:'pointer',
+                    fontFamily:'inherit',
+                    transition:'all 0.15s',
+                    background:duration === d ? 'rgba(255,51,102,0.2)' : 'rgba(255,255,255,0.05)',
+                    border:`1.5px solid ${duration === d ? '#FF3366' : 'rgba(255,255,255,0.08)'}`,
+                    color:duration === d ? '#FF3366' : 'rgba(255,255,255,0.6)',
+                    boxShadow:duration === d ? '0 0 12px rgba(255,51,102,0.3)' : 'none'
+                  }}
+                >
+                  {fmtTime(d)}
+                </button>
+              ))}
+            </div>
+          </div>
+          
+          {/* Info text */}
+          {isVideo && videoDuration > MAX_VIDEO_DUR && (
+            <div style={{marginTop:16,padding:'10px 12px',background:'rgba(249,115,22,0.1)',border:'1px solid rgba(249,115,22,0.3)',borderRadius:10,fontSize:11,color:'#F97316',lineHeight:1.4}}>
+              ⚠ Video exceeds 5 min limit. It will be trimmed to {fmtTime(MAX_VIDEO_DUR)}.
+            </div>
+          )}
         </div>
       </div>
     </div>

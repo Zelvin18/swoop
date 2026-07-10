@@ -40,7 +40,9 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
   const [imgIdx,  setImgIdx]  = useState(0)
   const [paused,  setPaused]  = useState(false)
   const [muted,   setMuted]   = useState(true)
+  const [musicPlaying, setMusicPlaying] = useState(false)
   const videoRef  = useRef(null)
+  const audioRef  = useRef(null)
   const cardRef   = useRef(null)
 
   // Play/pause control
@@ -70,21 +72,38 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
 
   // IntersectionObserver — pause + mute when scrolled away
   useEffect(() => {
-    const v = videoRef.current; const card = cardRef.current
-    if (!v || !card) return
+    const v = videoRef.current; const a = audioRef.current; const card = cardRef.current
+    if (!card) return
     const obs = new IntersectionObserver(([e]) => {
-      if (e.isIntersecting) { v.play().catch(()=>{}); setPaused(false) }
-      else { v.pause(); v.muted = true; setMuted(true) }
+      if (e.isIntersecting) {
+        if (v) { v.play().catch(()=>{}); setPaused(false) }
+        if (a && p.music_file_url && !isVideo) { a.play().catch(()=>{}); setMusicPlaying(true) }
+      } else {
+        if (v) { v.pause(); v.muted = true; setMuted(true) }
+        if (a) { a.pause(); setMusicPlaying(false) }
+      }
     }, { threshold: 0.6 })
     obs.observe(card)
     return () => obs.disconnect()
-  }, [isVideo])
+  }, [isVideo, p.music_file_url])
 
   return (
     <div ref={cardRef} className="feed-card" onDoubleClick={onDoubleTap}
       style={{position:'relative'}}
-      onClick={()=>{ if(muted && isVideo){ const v=videoRef.current; if(v){v.muted=false;setMuted(false)} } }}
+      onClick={()=>{ if(muted && isVideo){ const v=videoRef.current; if(v){v.muted=false;setMuted(false)} } else if (!isVideo && p.music_file_url){ const a=audioRef.current; if(a){ if(musicPlaying){a.pause();setMusicPlaying(false)}else{a.play().catch(()=>{});setMusicPlaying(true)} } } }}
     >
+      {/* Hidden audio element for music */}
+      {p.music_file_url && !isVideo && (
+        <audio
+          ref={audioRef}
+          src={p.music_file_url}
+          loop
+          style={{display:'none'}}
+          onPlay={()=>setMusicPlaying(true)}
+          onPause={()=>setMusicPlaying(false)}
+        />
+      )}
+
       {/* ── Full-screen media ── */}
       {isVideo ? (
         <video ref={videoRef} src={p.video_url}
@@ -139,6 +158,29 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
         </button>
       )}
 
+      {/* Music playing indicator for image posts */}
+      {!isVideo && p.music_file_url && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            const a = audioRef.current
+            if (a) {
+              if (musicPlaying) {
+                a.pause()
+                setMusicPlaying(false)
+              } else {
+                a.play().catch(() => {})
+                setMusicPlaying(true)
+              }
+            }
+          }}
+          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:musicPlaying?'rgba(255,51,102,0.55)':'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          {musicPlaying ? 'Playing' : 'Tap to play'}
+        </button>
+      )}
+
       <FeedActionRail
         liked={liked} likes={likes} comments={p.comments_count||0}
         saved={saved} saves={saves}
@@ -168,7 +210,9 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
   const [muted,   setMuted]   = useState(true)
   const [paused,  setPaused]  = useState(false)
   const [imgIdx,  setImgIdx]  = useState(0)
+  const [musicPlaying, setMusicPlaying] = useState(false)
   const videoRef  = useRef(null)
+  const audioRef  = useRef(null)
   const cardRef   = useRef(null)
 
   useEffect(()=>{
@@ -193,18 +237,35 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
 
   // Scroll away → pause + mute
   useEffect(()=>{
-    const v = videoRef.current; const card = cardRef.current
-    if (!v || !card) return
+    const v = videoRef.current; const a = audioRef.current; const card = cardRef.current
+    if (!card) return
     const obs = new IntersectionObserver(([e])=>{
-      if (e.isIntersecting) { v.play().catch(()=>{}); setPaused(false) }
-      else { v.pause(); v.muted=true; setMuted(true) }
+      if (e.isIntersecting) {
+        if (v) { v.play().catch(()=>{}); setPaused(false) }
+        if (a && p.music_file_url && !isVideo) { a.play().catch(()=>{}); setMusicPlaying(true) }
+      } else {
+        if (v) { v.pause(); v.muted=true; setMuted(true) }
+        if (a) { a.pause(); setMusicPlaying(false) }
+      }
     }, { threshold:0.6 })
     obs.observe(card)
     return () => obs.disconnect()
-  }, [isVideo])
+  }, [isVideo, p.music_file_url])
 
   return (
     <div ref={cardRef} className={`feed-card${paused?' paused':''}`} onDoubleClick={onDoubleTap}>
+      {/* Hidden audio element for music */}
+      {p.music_file_url && !isVideo && (
+        <audio
+          ref={audioRef}
+          src={p.music_file_url}
+          loop
+          style={{display:'none'}}
+          onPlay={()=>setMusicPlaying(true)}
+          onPause={()=>setMusicPlaying(false)}
+        />
+      )}
+
       {/* ── Full-screen background media ── */}
       {isVideo ? (
         <video ref={videoRef} src={p.video_url} className="feed-media-bg"
@@ -256,6 +317,29 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
           style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
           Tap or raise volume
+        </button>
+      )}
+
+      {/* Music playing indicator for image posts */}
+      {!isVideo && p.music_file_url && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            const a = audioRef.current
+            if (a) {
+              if (musicPlaying) {
+                a.pause()
+                setMusicPlaying(false)
+              } else {
+                a.play().catch(() => {})
+                setMusicPlaying(true)
+              }
+            }
+          }}
+          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:musicPlaying?'rgba(255,51,102,0.55)':'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          {musicPlaying ? 'Playing' : 'Tap to play'}
         </button>
       )}
 
@@ -317,9 +401,11 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   const [conversation,setConversation]= useState(null)
   const [muted,       setMuted]       = useState(true)
   const [imgIdx,      setImgIdx]      = useState(0)
+  const [musicPlaying, setMusicPlaying] = useState(false)
   const [showSellerProfile, setShowSellerProfile] = useState(false)
   const heartTimer  = useRef(null)
   const videoRef    = useRef(null)
+  const audioRef    = useRef(null)
   const productRef  = useRef(null)
 
   const seller      = p.seller || {}
@@ -363,15 +449,20 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   }, [isProductVideo])
 
   useEffect(()=>{
-    const v = videoRef.current; const card = productRef.current
-    if (!v || !card || !isProductVideo) return
+    const v = videoRef.current; const a = audioRef.current; const card = productRef.current
+    if (!card) return
     const obs = new IntersectionObserver(([e])=>{
-      if (e.isIntersecting){ v.play().catch(()=>{}); setPaused(false) }
-      else { v.pause(); v.muted=true; setMuted(true) }
+      if (e.isIntersecting){
+        if (v && isProductVideo) { v.play().catch(()=>{}); setPaused(false) }
+        if (a && p.music_file_url && !isProductVideo) { a.play().catch(()=>{}); setMusicPlaying(true) }
+      } else {
+        if (v) { v.pause(); v.muted=true; setMuted(true) }
+        if (a) { a.pause(); setMusicPlaying(false) }
+      }
     }, { threshold:0.6 })
     obs.observe(card)
     return () => obs.disconnect()
-  }, [isProductVideo])
+  }, [isProductVideo, p.music_file_url])
 
   const handleLike = async () => {
     if (!currentUser) return
@@ -496,8 +587,20 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   return (
     <div ref={productRef} className={`feed-card${paused?' paused':''}`}
       onDoubleClick={handleDoubleTap}
-      onClick={()=>{ if(muted && isVideo){ const v=videoRef.current; if(v){v.muted=false;setMuted(false)} } }}
+      onClick={()=>{ if(muted && isVideo){ const v=videoRef.current; if(v){v.muted=false;setMuted(false)} } else if (!isVideo && p.music_file_url){ const a=audioRef.current; if(a){ if(musicPlaying){a.pause();setMusicPlaying(false)}else{a.play().catch(()=>{});setMusicPlaying(true)} } } }}
     >
+      {/* Hidden audio element for music */}
+      {p.music_file_url && !isVideo && (
+        <audio
+          ref={audioRef}
+          src={p.music_file_url}
+          loop
+          style={{display:'none'}}
+          onPlay={()=>setMusicPlaying(true)}
+          onPause={()=>setMusicPlaying(false)}
+        />
+      )}
+
       {/* Background — video > images > color/emoji */}
       {isVideo ? (
         <video
@@ -574,6 +677,29 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
           style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
           Tap or raise volume
+        </button>
+      )}
+
+      {/* Music playing indicator for image posts */}
+      {!isVideo && p.music_file_url && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            const a = audioRef.current
+            if (a) {
+              if (musicPlaying) {
+                a.pause()
+                setMusicPlaying(false)
+              } else {
+                a.play().catch(() => {})
+                setMusicPlaying(true)
+              }
+            }
+          }}
+          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:musicPlaying?'rgba(255,51,102,0.55)':'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          {musicPlaying ? 'Playing' : 'Tap to play'}
         </button>
       )}
 
