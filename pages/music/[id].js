@@ -24,27 +24,65 @@ export default function MusicPage() {
     async function loadMusicData() {
       setLoading(true)
       try {
-        // Fetch music details
-        const { data: musicData, error: musicError } = await supabase
-          .from('music')
-          .select('*')
-          .eq('id', id)
-          .single()
+        // Try to fetch music details from music table
+        let musicData = null
+        try {
+          const { data, error } = await supabase
+            .from('music')
+            .select('*')
+            .eq('id', id)
+            .single()
+          if (!error && data) {
+            musicData = data
+          }
+        } catch (e) {
+          // Music table might not exist yet, that's ok
+        }
 
-        if (musicError) throw musicError
-        setMusic(musicData)
-
-        // Fetch posts using this music
-        const { data: postsData, error: postsError } = await supabase
+        // If music table lookup failed, try to find posts with this music_file_url
+        const postsQuery = supabase
           .from('posts')
           .select(`
             *,
-            seller:sellers(*)
+            seller:profiles(*)
           `)
           .eq('music_id', id)
           .order('created_at', { ascending: false })
 
-        if (postsError) throw postsError
+        let postsData = []
+        const { data, error } = await postsQuery
+        if (!error && data) {
+          postsData = data
+        }
+
+        // If no posts found by music_id, try by music_file_url
+        if (postsData.length === 0) {
+          const { data: postsByUrl, error: urlError } = await supabase
+            .from('posts')
+            .select(`
+              *,
+              seller:profiles(*)
+            `)
+            .eq('music_file_url', id)
+            .order('created_at', { ascending: false })
+          if (!urlError && postsByUrl) {
+            postsData = postsByUrl
+          }
+        }
+
+        // Create a mock music object from the first post if music table doesn't exist
+        if (!musicData && postsData.length > 0) {
+          const firstPost = postsData[0]
+          musicData = {
+            id: id,
+            title: firstPost.music_title || 'Unknown Track',
+            artist: firstPost.music_artist || 'Unknown Artist',
+            album_art: firstPost.music_album_art || null,
+            file_url: firstPost.music_file_url || id
+          }
+        }
+
+        setMusic(musicData)
         setPosts(postsData || [])
       } catch (error) {
         console.error('Error loading music data:', error)
