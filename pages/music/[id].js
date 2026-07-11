@@ -2,15 +2,21 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
 import FeedCard from '../../components/FeedCard'
-import { useAuth } from '../../lib/auth'
 
 export default function MusicPage() {
   const router = useRouter()
   const { id } = router.query
-  const { currentUser } = useAuth()
+  const [currentUser, setCurrentUser] = useState(null)
   const [music, setMusic] = useState(null)
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Get current user session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setCurrentUser(session?.user ?? null)
+    })
+  }, [])
 
   useEffect(() => {
     if (!id) return
