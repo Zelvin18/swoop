@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useRouter } from 'next/router'
 import { formatUGX, discountPct, fmtDistance, likePost, unlikePost, savePost, unsavePost, sharePost } from '../lib/feed'
 import { getFilterCSS } from '../lib/mediaFilters'
 import { supabase } from '../lib/supabase'
@@ -34,6 +35,7 @@ function registerVideoForUnmute(cb) {
 
 // ── Social post — full-screen Instagram Reels style ───────────────────────────
 function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike, onSave, onShare, onComment, onDoubleTap, onSellerTap, following, followLoading, onFollow, canFollow }) {
+  const router = useRouter()
   const isVideo   = !!p.video_url
   const hasImages = p.images?.length > 0
   const filterCSS = getFilterCSS(p.filter_name)
@@ -87,6 +89,7 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
   // Volume key → unmute via global manager + video volumechange
   useEffect(() => {
     const v = videoRef.current; if (!v) return
+    const a = audioRef.current
     // Register for global unmute (volume up button)
     const unregister = registerVideoForUnmute(() => {
       if (document.hidden) return
@@ -95,13 +98,19 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
       if (!card) return
       const rect = card.getBoundingClientRect()
       const visible = rect.top >= -rect.height * 0.4 && rect.top <= window.innerHeight * 0.6
-      if (visible) { v.muted = false; setMuted(false) }
+      if (visible) { 
+        v.muted = false; setMuted(false)
+        // Also unmute audio if playing
+        if (a && !isVideo) {
+          a.muted = false
+        }
+      }
     })
     // Also listen directly on the video element
     const onVolChange = () => { if (!document.hidden && !v.muted) setMuted(false) }
     v.addEventListener('volumechange', onVolChange)
     return () => { unregister(); v.removeEventListener('volumechange', onVolChange) }
-  }, [])
+  }, [isVideo])
 
   // IntersectionObserver — pause + mute when scrolled away
   useEffect(() => {
@@ -197,13 +206,14 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
       )}
 
       {/* Music pill - Instagram style at top-left */}
-      {!isVideo && (p.music_title || p.music_artist) && (
+      {!isVideo && (p.music_title || p.music_artist || p.music_file_url) && (
         <div 
           onClick={(e) => {
             e.stopPropagation()
-            // Navigate to music page (to be implemented)
-            if (p.music_id) {
-              window.location.href = `/music/${p.music_id}`
+            // Navigate to music page using music_id or music_file_url as identifier
+            const musicId = p.music_id || p.music_file_url
+            if (musicId) {
+              router.push(`/music/${musicId}`)
             }
           }}
           style={{
@@ -295,6 +305,7 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
 
 // ── Service post card — full-screen TikTok style ──────────────────────────────
 function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved, saves, onLike, onSave, onShare, onComment, onDoubleTap, onChatSeller, onSellerTap, following, followLoading, onFollow, canFollow }) {
+  const router = useRouter()
   const isVideo   = !!p.video_url
   const hasImages = p.images?.length > 0
   const filterCSS = getFilterCSS(p.filter_name)
@@ -449,13 +460,14 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
       )}
 
       {/* Music pill - Instagram style at top-left */}
-      {!isVideo && (p.music_title || p.music_artist) && (
+      {!isVideo && (p.music_title || p.music_artist || p.music_file_url) && (
         <div 
           onClick={(e) => {
             e.stopPropagation()
-            // Navigate to music page (to be implemented)
-            if (p.music_id) {
-              window.location.href = `/music/${p.music_id}`
+            // Navigate to music page using music_id or music_file_url as identifier
+            const musicId = p.music_id || p.music_file_url
+            if (musicId) {
+              router.push(`/music/${musicId}`)
             }
           }}
           style={{
@@ -569,6 +581,7 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
 
 // ── Main FeedCard — routes by post_type ───────────────────────────────────────
 export default function FeedCard({ post: p, currentUser, initialLiked=false, initialSaved=false, distanceKm=null, onOpenComments, onChatSeller }) {
+  const router = useRouter()
   // ── All hooks must be declared unconditionally (Rules of Hooks) ────────────
   const [liked,       setLiked]       = useState(initialLiked)
   const [saved,       setSaved]       = useState(initialSaved)
@@ -902,13 +915,14 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
       )}
 
       {/* Music pill - Instagram style at top-left */}
-      {!isVideo && (p.music_title || p.music_artist) && (
+      {!isVideo && (p.music_title || p.music_artist || p.music_file_url) && (
         <div 
           onClick={(e) => {
             e.stopPropagation()
-            // Navigate to music page (to be implemented)
-            if (p.music_id) {
-              window.location.href = `/music/${p.music_id}`
+            // Navigate to music page using music_id or music_file_url as identifier
+            const musicId = p.music_id || p.music_file_url
+            if (musicId) {
+              router.push(`/music/${musicId}`)
             }
           }}
           style={{
