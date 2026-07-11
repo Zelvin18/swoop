@@ -196,7 +196,7 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
         </button>
       )}
 
-      {/* Music marquee for image posts */}
+      {/* Music pill - Instagram style at top-left */}
       {!isVideo && (p.music_title || p.music_artist) && (
         <div 
           onClick={(e) => {
@@ -214,42 +214,54 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
           }}
           style={{
             position:'absolute',
-            top:'calc(env(safe-area-inset-top,0px)+58px)',
-            left:14,
-            right:14,
-            display:'flex',
-            alignItems:'center',
-            gap:8,
-            background:musicPlaying?'rgba(255,51,102,0.55)':'rgba(0,0,0,0.55)',
-            backdropFilter:'blur(6px)',
-            border:'1px solid rgba(255,255,255,0.15)',
-            borderRadius:20,
-            padding:'6px 12px',
+            top:'calc(env(safe-area-inset-top,0px)+12px)',
+            left:12,
+            width:44,
+            height:44,
+            borderRadius:12,
+            background:'rgba(0,0,0,0.6)',
+            backdropFilter:'blur(8px)',
+            border:'1px solid rgba(255,255,255,0.2)',
             cursor:'pointer',
             zIndex:17,
-            color:'white',
-            fontSize:11,
-            fontWeight:600,
-            letterSpacing:'-0.2px',
-            boxShadow:'0 2px 8px rgba(0,0,0,0.4)',
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            boxShadow:'0 4px 12px rgba(0,0,0,0.3)',
             overflow:'hidden'
           }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" style={{flexShrink:0}}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          {/* Album art / music icon */}
           <div style={{
-            flex:1,
-            overflow:'hidden',
-            whiteSpace:'nowrap',
-            position:'relative'
+            width:36,
+            height:36,
+            borderRadius:10,
+            background:'linear-gradient(135deg,#FF3366,#F97316)',
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            animation:musicPlaying ? 'spin 3s linear infinite' : 'none'
           }}>
-            <div style={{
-              display:'inline-block',
-              animation:musicPlaying ? 'marquee 8s linear infinite' : 'none',
-              paddingLeft:'100%'
-            }}>
-              {p.music_title && p.music_artist ? `${p.music_title} · ${p.music_artist}` : p.music_title || p.music_artist}
-            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style={{animation:musicPlaying ? 'pulse 1s ease-in-out infinite' : 'none'}}>
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+            </svg>
           </div>
+          {/* Playing indicator dot */}
+          {musicPlaying && (
+            <div style={{
+              position:'absolute',
+              bottom:6,
+              right:6,
+              width:8,
+              height:8,
+              borderRadius:'50%',
+              background:'#22C55E',
+              border:'2px solid white',
+              boxShadow:'0 2px 4px rgba(0,0,0,0.3)'
+            }}/>
+          )}
         </div>
       )}
 
@@ -429,7 +441,7 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
         </button>
       )}
 
-      {/* Music marquee for image posts */}
+      {/* Music pill - Instagram style at top-left */}
       {!isVideo && (p.music_title || p.music_artist) && (
         <div 
           onClick={(e) => {
@@ -447,42 +459,54 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
           }}
           style={{
             position:'absolute',
-            top:'calc(env(safe-area-inset-top,0px)+58px)',
-            left:14,
-            right:14,
-            display:'flex',
-            alignItems:'center',
-            gap:8,
-            background:musicPlaying?'rgba(255,51,102,0.55)':'rgba(0,0,0,0.55)',
-            backdropFilter:'blur(6px)',
-            border:'1px solid rgba(255,255,255,0.15)',
-            borderRadius:20,
-            padding:'6px 12px',
+            top:'calc(env(safe-area-inset-top,0px)+12px)',
+            left:12,
+            width:44,
+            height:44,
+            borderRadius:12,
+            background:'rgba(0,0,0,0.6)',
+            backdropFilter:'blur(8px)',
+            border:'1px solid rgba(255,255,255,0.2)',
             cursor:'pointer',
             zIndex:17,
-            color:'white',
-            fontSize:11,
-            fontWeight:600,
-            letterSpacing:'-0.2px',
-            boxShadow:'0 2px 8px rgba(0,0,0,0.4)',
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            boxShadow:'0 4px 12px rgba(0,0,0,0.3)',
             overflow:'hidden'
           }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" style={{flexShrink:0}}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          {/* Album art / music icon */}
           <div style={{
-            flex:1,
-            overflow:'hidden',
-            whiteSpace:'nowrap',
-            position:'relative'
+            width:36,
+            height:36,
+            borderRadius:10,
+            background:'linear-gradient(135deg,#FF3366,#F97316)',
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            animation:musicPlaying ? 'spin 3s linear infinite' : 'none'
           }}>
-            <div style={{
-              display:'inline-block',
-              animation:musicPlaying ? 'marquee 8s linear infinite' : 'none',
-              paddingLeft:'100%'
-            }}>
-              {p.music_title && p.music_artist ? `${p.music_title} · ${p.music_artist}` : p.music_title || p.music_artist}
-            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style={{animation:musicPlaying ? 'pulse 1s ease-in-out infinite' : 'none'}}>
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+            </svg>
           </div>
+          {/* Playing indicator dot */}
+          {musicPlaying && (
+            <div style={{
+              position:'absolute',
+              bottom:6,
+              right:6,
+              width:8,
+              height:8,
+              borderRadius:'50%',
+              background:'#22C55E',
+              border:'2px solid white',
+              boxShadow:'0 2px 4px rgba(0,0,0,0.3)'
+            }}/>
+          )}
         </div>
       )}
 
@@ -862,7 +886,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
         </button>
       )}
 
-      {/* Music marquee for image posts */}
+      {/* Music pill - Instagram style at top-left */}
       {!isVideo && (p.music_title || p.music_artist) && (
         <div 
           onClick={(e) => {
@@ -880,42 +904,54 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
           }}
           style={{
             position:'absolute',
-            top:'calc(env(safe-area-inset-top,0px)+58px)',
-            left:14,
-            right:14,
-            display:'flex',
-            alignItems:'center',
-            gap:8,
-            background:musicPlaying?'rgba(255,51,102,0.55)':'rgba(0,0,0,0.55)',
-            backdropFilter:'blur(6px)',
-            border:'1px solid rgba(255,255,255,0.15)',
-            borderRadius:20,
-            padding:'6px 12px',
+            top:'calc(env(safe-area-inset-top,0px)+12px)',
+            left:12,
+            width:44,
+            height:44,
+            borderRadius:12,
+            background:'rgba(0,0,0,0.6)',
+            backdropFilter:'blur(8px)',
+            border:'1px solid rgba(255,255,255,0.2)',
             cursor:'pointer',
             zIndex:17,
-            color:'white',
-            fontSize:11,
-            fontWeight:600,
-            letterSpacing:'-0.2px',
-            boxShadow:'0 2px 8px rgba(0,0,0,0.4)',
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            boxShadow:'0 4px 12px rgba(0,0,0,0.3)',
             overflow:'hidden'
           }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" style={{flexShrink:0}}><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          {/* Album art / music icon */}
           <div style={{
-            flex:1,
-            overflow:'hidden',
-            whiteSpace:'nowrap',
-            position:'relative'
+            width:36,
+            height:36,
+            borderRadius:10,
+            background:'linear-gradient(135deg,#FF3366,#F97316)',
+            display:'flex',
+            alignItems:'center',
+            justifyContent:'center',
+            animation:musicPlaying ? 'spin 3s linear infinite' : 'none'
           }}>
-            <div style={{
-              display:'inline-block',
-              animation:musicPlaying ? 'marquee 8s linear infinite' : 'none',
-              paddingLeft:'100%'
-            }}>
-              {p.music_title && p.music_artist ? `${p.music_title} · ${p.music_artist}` : p.music_title || p.music_artist}
-            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style={{animation:musicPlaying ? 'pulse 1s ease-in-out infinite' : 'none'}}>
+              <path d="M9 18V5l12-2v13"/>
+              <circle cx="6" cy="18" r="3"/>
+              <circle cx="18" cy="16" r="3"/>
+            </svg>
           </div>
+          {/* Playing indicator dot */}
+          {musicPlaying && (
+            <div style={{
+              position:'absolute',
+              bottom:6,
+              right:6,
+              width:8,
+              height:8,
+              borderRadius:'50%',
+              background:'#22C55E',
+              border:'2px solid white',
+              boxShadow:'0 2px 4px rgba(0,0,0,0.3)'
+            }}/>
+          )}
         </div>
       )}
 
@@ -975,7 +1011,7 @@ function HeartFlash() {
   return (
     <div style={{position:'absolute',inset:0,display:'flex',alignItems:'center',justifyContent:'center',zIndex:30,pointerEvents:'none'}}>
       <i className="fas fa-heart" style={{fontSize:80,color:'white',filter:'drop-shadow(0 4px 20px rgba(0,0,0,0.5))',animation:'heartPop 0.8s ease forwards'}}/>
-      <style>{`@keyframes heartPop{0%{opacity:0;transform:scale(0.3)}30%{opacity:1;transform:scale(1.2)}60%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.1)}}@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}`}</style>
+      <style>{`@keyframes heartPop{0%{opacity:0;transform:scale(0.3)}30%{opacity:1;transform:scale(1.2)}60%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.1)}}@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-100%)}}@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}`}</style>
     </div>
   )
 }

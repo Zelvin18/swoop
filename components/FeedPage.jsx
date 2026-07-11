@@ -125,7 +125,8 @@ export default function FeedPage({ showToast, onTabChange, currentUser, refreshT
           let next = [...prev]
           for (const item of completed) {
             if (!next.some(p => p.id === item.post.id)) {
-              next = [...next, { ...item.post, seller: item.post.seller || item.seller }]
+              // Add new posts to the top of the feed
+              next = [{ ...item.post, seller: item.post.seller || item.seller }, ...next]
             }
           }
           return next
@@ -256,23 +257,25 @@ export default function FeedPage({ showToast, onTabChange, currentUser, refreshT
           <EmptyState tab={activeTab} category={activeCat} />
         )}
 
-        {/* Pending uploads (TikTok-style) */}
-        {pendingPosts.filter(p => p.status !== 'done').map(p => (
-          <PendingPostCard key={p.id} item={p} />
-        ))}
-
-        {/* Posts */}
-        {!loading && posts.map(p => (
-          <FeedCard
-            key={p.id}
-            post={p}
-            currentUser={currentUser}
-            initialLiked={postStates[p.id]?.liked || false}
-            initialSaved={postStates[p.id]?.saved || false}
-            distanceKm={p._distanceKm ?? null}
-            onOpenComments={post => setCommentPost(post)}
-          />
-        ))}
+        {/* Posts - including pending uploads at top */}
+        {!loading && [
+          // Pending uploads (loading state at top of feed)
+          ...pendingPosts.filter(p => p.status !== 'done').map(p => (
+            <PendingPostCard key={p.id} item={p} />
+          )),
+          // Regular posts
+          ...posts.map(p => (
+            <FeedCard
+              key={p.id}
+              post={p}
+              currentUser={currentUser}
+              initialLiked={postStates[p.id]?.liked || false}
+              initialSaved={postStates[p.id]?.saved || false}
+              distanceKm={p._distanceKm ?? null}
+              onOpenComments={post => setCommentPost(post)}
+            />
+          ))
+        ]}
 
         {/* Loading more */}
         {loadingMore && (
