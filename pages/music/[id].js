@@ -1,0 +1,243 @@
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/router'
+import { supabase } from '../../lib/supabase'
+import FeedCard from '../../components/FeedCard'
+import { useAuth } from '../../lib/auth'
+
+export default function MusicPage() {
+  const router = useRouter()
+  const { id } = router.query
+  const { currentUser } = useAuth()
+  const [music, setMusic] = useState(null)
+  const [posts, setPosts] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!id) return
+
+    async function loadMusicData() {
+      setLoading(true)
+      try {
+        // Fetch music details
+        const { data: musicData, error: musicError } = await supabase
+          .from('music')
+          .select('*')
+          .eq('id', id)
+          .single()
+
+        if (musicError) throw musicError
+        setMusic(musicData)
+
+        // Fetch posts using this music
+        const { data: postsData, error: postsError } = await supabase
+          .from('posts')
+          .select(`
+            *,
+            seller:sellers(*)
+          `)
+          .eq('music_id', id)
+          .order('created_at', { ascending: false })
+
+        if (postsError) throw postsError
+        setPosts(postsData || [])
+      } catch (error) {
+        console.error('Error loading music data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadMusicData()
+  }, [id])
+
+  if (loading) {
+    return (
+      <div style={{
+        height: '100dvh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#000',
+        flexDirection: 'column',
+        gap: 16
+      }}>
+        <div style={{
+          width: 56,
+          height: 56,
+          background: 'linear-gradient(135deg,#D946EF,#FF3366,#FB923C)',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: 24,
+          color: 'white',
+          animation: 'spin 1s linear infinite'
+        }}>♪</div>
+        <div style={{ color: '#52525B', fontSize: 14 }}>Loading music...</div>
+        <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
+      </div>
+    )
+  }
+
+  if (!music) {
+    return (
+      <div style={{
+        height: '100dvh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#000',
+        flexDirection: 'column',
+        gap: 16
+      }}>
+        <div style={{ fontSize: 60 }}>🎵</div>
+        <div style={{ color: '#fff', fontSize: 18, fontWeight: 800 }}>Music not found</div>
+        <button
+          onClick={() => router.back()}
+          style={{
+            padding: '12px 24px',
+            background: '#FF3366',
+            color: 'white',
+            border: 'none',
+            borderRadius: 24,
+            fontSize: 14,
+            fontWeight: 600,
+            cursor: 'pointer'
+          }}
+        >
+          Go Back
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ background: '#000', minHeight: '100dvh' }}>
+      {/* Header with music info */}
+      <div style={{
+        position: 'sticky',
+        top: 0,
+        zIndex: 50,
+        background: 'rgba(0,0,0,0.9)',
+        backdropFilter: 'blur(20px)',
+        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        padding: '16px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 16
+      }}>
+        <button
+          onClick={() => router.back()}
+          style={{
+            width: 36,
+            height: 36,
+            borderRadius: '50%',
+            background: 'rgba(255,255,255,0.1)',
+            border: 'none',
+            color: 'white',
+            fontSize: 16,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}
+        >
+          ←
+        </button>
+        
+        {/* Album art */}
+        <div style={{
+          width: 48,
+          height: 48,
+          borderRadius: 12,
+          overflow: 'hidden',
+          background: 'linear-gradient(135deg,#FF3366,#F97316)',
+          flexShrink: 0
+        }}>
+          {music.album_art ? (
+            <img
+              src={music.album_art}
+              alt="Album art"
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            <div style={{
+              width: '100%',
+              height: '100%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 24
+            }}>🎵</div>
+          )}
+        </div>
+
+        {/* Music info */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{
+            color: 'white',
+            fontSize: 16,
+            fontWeight: 700,
+            marginBottom: 2,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            {music.title}
+          </div>
+          <div style={{
+            color: 'rgba(255,255,255,0.6)',
+            fontSize: 13,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap'
+          }}>
+            {music.artist || 'Unknown Artist'}
+          </div>
+        </div>
+
+        {/* Post count */}
+        <div style={{
+          background: 'rgba(255,51,102,0.2)',
+          border: '1px solid rgba(255,51,102,0.4)',
+          borderRadius: 16,
+          padding: '6px 12px',
+          fontSize: 12,
+          fontWeight: 700,
+          color: '#FF3366'
+        }}>
+          {posts.length} posts
+        </div>
+      </div>
+
+      {/* Posts using this music */}
+      <div style={{ paddingBottom: 100 }}>
+        {posts.length === 0 ? (
+          <div style={{
+            height: '60dvh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            gap: 16
+          }}>
+            <div style={{ fontSize: 60 }}>🎬</div>
+            <div style={{ color: '#52525B', fontSize: 14, textAlign: 'center', padding: '0 32px' }}>
+              No posts using this sound yet. Be the first to create one!
+            </div>
+          </div>
+        ) : (
+          posts.map(post => (
+            <FeedCard
+              key={post.id}
+              post={post}
+              currentUser={currentUser}
+              initialLiked={false}
+              initialSaved={false}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  )
+}

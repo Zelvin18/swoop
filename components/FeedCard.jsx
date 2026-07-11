@@ -201,15 +201,9 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
         <div 
           onClick={(e) => {
             e.stopPropagation()
-            const a = audioRef.current
-            if (a) {
-              if (musicPlaying) {
-                a.pause()
-                setMusicPlaying(false)
-              } else {
-                a.play().catch(() => {})
-                setMusicPlaying(true)
-              }
+            // Navigate to music page (to be implemented)
+            if (p.music_id) {
+              window.location.href = `/music/${p.music_id}`
             }
           }}
           style={{
@@ -232,22 +226,36 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
           }}
         >
           {/* Album art / music icon */}
-          <div style={{
-            width:36,
-            height:36,
-            borderRadius:10,
-            background:'linear-gradient(135deg,#FF3366,#F97316)',
-            display:'flex',
-            alignItems:'center',
-            justifyContent:'center',
-            animation:musicPlaying ? 'spin 3s linear infinite' : 'none'
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style={{animation:musicPlaying ? 'pulse 1s ease-in-out infinite' : 'none'}}>
-              <path d="M9 18V5l12-2v13"/>
-              <circle cx="6" cy="18" r="3"/>
-              <circle cx="18" cy="16" r="3"/>
-            </svg>
-          </div>
+          {p.music_album_art ? (
+            <img 
+              src={p.music_album_art} 
+              alt="Album art"
+              style={{
+                width:36,
+                height:36,
+                borderRadius:10,
+                objectFit:'cover',
+                animation:musicPlaying ? 'spin 3s linear infinite' : 'none'
+              }}
+            />
+          ) : (
+            <div style={{
+              width:36,
+              height:36,
+              borderRadius:10,
+              background:'linear-gradient(135deg,#FF3366,#F97316)',
+              display:'flex',
+              alignItems:'center',
+              justifyContent:'center',
+              animation:musicPlaying ? 'spin 3s linear infinite' : 'none'
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style={{animation:musicPlaying ? 'pulse 1s ease-in-out infinite' : 'none'}}>
+                <path d="M9 18V5l12-2v13"/>
+                <circle cx="6" cy="18" r="3"/>
+                <circle cx="18" cy="16" r="3"/>
+              </svg>
+            </div>
+          )}
           {/* Playing indicator dot */}
           {musicPlaying && (
             <div style={{
@@ -279,7 +287,6 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
           onSellerTap={onSellerTap} showFollow={canFollow}
         />
         {p.caption && <div style={{fontSize:14,color:'rgba(255,255,255,0.92)',lineHeight:1.5,textShadow:'0 1px 4px rgba(0,0,0,0.8)',marginBottom:5,display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{p.caption}</div>}
-        {(p.music_title || p.music_artist) && <FeedMusicPill title={p.music_title} artist={p.music_artist} />}
         {p.location && <div style={{fontSize:11,color:'rgba(255,255,255,0.5)',display:'flex',alignItems:'center',gap:4,marginTop:3}}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>{p.location}</div>}
       </div>
     </div>
@@ -446,15 +453,9 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
         <div 
           onClick={(e) => {
             e.stopPropagation()
-            const a = audioRef.current
-            if (a) {
-              if (musicPlaying) {
-                a.pause()
-                setMusicPlaying(false)
-              } else {
-                a.play().catch(() => {})
-                setMusicPlaying(true)
-              }
+            // Navigate to music page (to be implemented)
+            if (p.music_id) {
+              window.location.href = `/music/${p.music_id}`
             }
           }}
           style={{
@@ -477,22 +478,36 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
           }}
         >
           {/* Album art / music icon */}
-          <div style={{
-            width:36,
-            height:36,
-            borderRadius:10,
-            background:'linear-gradient(135deg,#FF3366,#F97316)',
-            display:'flex',
-            alignItems:'center',
-            justifyContent:'center',
-            animation:musicPlaying ? 'spin 3s linear infinite' : 'none'
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style={{animation:musicPlaying ? 'pulse 1s ease-in-out infinite' : 'none'}}>
-              <path d="M9 18V5l12-2v13"/>
-              <circle cx="6" cy="18" r="3"/>
-              <circle cx="18" cy="16" r="3"/>
-            </svg>
-          </div>
+          {p.music_album_art ? (
+            <img 
+              src={p.music_album_art} 
+              alt="Album art"
+              style={{
+                width:36,
+                height:36,
+                borderRadius:10,
+                objectFit:'cover',
+                animation:musicPlaying ? 'spin 3s linear infinite' : 'none'
+              }}
+            />
+          ) : (
+            <div style={{
+              width:36,
+              height:36,
+              borderRadius:10,
+              background:'linear-gradient(135deg,#FF3366,#F97316)',
+              display:'flex',
+              alignItems:'center',
+              justifyContent:'center',
+              animation:musicPlaying ? 'spin 3s linear infinite' : 'none'
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style={{animation:musicPlaying ? 'pulse 1s ease-in-out infinite' : 'none'}}>
+                <path d="M9 18V5l12-2v13"/>
+                <circle cx="6" cy="18" r="3"/>
+                <circle cx="18" cy="16" r="3"/>
+              </svg>
+            </div>
+          )}
           {/* Playing indicator dot */}
           {musicPlaying && (
             <div style={{
@@ -891,15 +906,9 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
         <div 
           onClick={(e) => {
             e.stopPropagation()
-            const a = audioRef.current
-            if (a) {
-              if (musicPlaying) {
-                a.pause()
-                setMusicPlaying(false)
-              } else {
-                a.play().catch(() => {})
-                setMusicPlaying(true)
-              }
+            // Navigate to music page (to be implemented)
+            if (p.music_id) {
+              window.location.href = `/music/${p.music_id}`
             }
           }}
           style={{
@@ -922,22 +931,36 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
           }}
         >
           {/* Album art / music icon */}
-          <div style={{
-            width:36,
-            height:36,
-            borderRadius:10,
-            background:'linear-gradient(135deg,#FF3366,#F97316)',
-            display:'flex',
-            alignItems:'center',
-            justifyContent:'center',
-            animation:musicPlaying ? 'spin 3s linear infinite' : 'none'
-          }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style={{animation:musicPlaying ? 'pulse 1s ease-in-out infinite' : 'none'}}>
-              <path d="M9 18V5l12-2v13"/>
-              <circle cx="6" cy="18" r="3"/>
-              <circle cx="18" cy="16" r="3"/>
-            </svg>
-          </div>
+          {p.music_album_art ? (
+            <img 
+              src={p.music_album_art} 
+              alt="Album art"
+              style={{
+                width:36,
+                height:36,
+                borderRadius:10,
+                objectFit:'cover',
+                animation:musicPlaying ? 'spin 3s linear infinite' : 'none'
+              }}
+            />
+          ) : (
+            <div style={{
+              width:36,
+              height:36,
+              borderRadius:10,
+              background:'linear-gradient(135deg,#FF3366,#F97316)',
+              display:'flex',
+              alignItems:'center',
+              justifyContent:'center',
+              animation:musicPlaying ? 'spin 3s linear infinite' : 'none'
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="white" style={{animation:musicPlaying ? 'pulse 1s ease-in-out infinite' : 'none'}}>
+                <path d="M9 18V5l12-2v13"/>
+                <circle cx="6" cy="18" r="3"/>
+                <circle cx="18" cy="16" r="3"/>
+              </svg>
+            </div>
+          )}
           {/* Playing indicator dot */}
           {musicPlaying && (
             <div style={{
@@ -977,18 +1000,18 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
             {fmtDistance(distanceKm)}
           </div>
         )}
-        {p.is_hot && (
-          <div style={{display:'inline-flex',alignItems:'center',gap:5,marginBottom:6,background:'linear-gradient(135deg,#FF3366,#F97316)',borderRadius:20,padding:'3px 10px',fontSize:10,fontWeight:800,color:'white'}}>
-            🔥 Hot Deal
-          </div>
-        )}
         {p.title&&<div className="feed-product-title">{p.title}</div>}
         {p.description&&<div className="feed-product-desc">{p.description}</div>}
         {priceStr&&(
-          <div className="feed-price-row">
+          <div className="feed-price-row" style={{display:'flex',alignItems:'center',gap:8}}>
             <span className="feed-price">{priceStr}</span>
             {origStr&&<span className="feed-price-orig">{origStr}</span>}
             {discStr&&<span className="feed-price-badge">{discStr}</span>}
+            {p.is_hot && (
+              <div style={{display:'inline-flex',alignItems:'center',gap:4,background:'linear-gradient(135deg,#FF3366,#F97316)',borderRadius:16,padding:'4px 10px',fontSize:10,fontWeight:800,color:'white',boxShadow:'0 2px 8px rgba(255,51,102,0.4)'}}>
+                🔥 Hot Deal
+              </div>
+            )}
           </div>
         )}
         <div className="feed-cta-row">
