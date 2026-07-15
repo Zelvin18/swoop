@@ -409,7 +409,14 @@ export default function PostRequestModal({ currentUser, onClose, onPosted }) {
                 <SummaryRow label="Category"   val={category || 'Not specified'} />
                 <SummaryRow label="Condition"  val={condition} />
                 {colorPref && <SummaryRow label="Colour"  val={colorPref} />}
-                {imageUrl && <SummaryRow label="Image"     val="✓ Added" />}
+                {imageUrl && (
+                  <div style={{ marginTop: 12, marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: '#A1A1AA', marginBottom: 6 }}>Product Image</div>
+                    <div style={{ width: '100%', aspectRatio: '4/3', borderRadius: 10, overflow: 'hidden', background: '#0d0d0d', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      <img src={imageUrl} alt="Product preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                  </div>
+                )}
                 <SummaryRow label="Budget"
                   val={budgetMin || budgetMax
                     ? `UGX ${budgetMin ? Number(budgetMin).toLocaleString() : '0'} – ${budgetMax ? Number(budgetMax).toLocaleString() : '∞'}`
