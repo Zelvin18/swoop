@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../../lib/supabase'
-import FeedCard from '../../components/FeedCard'
 
 export default function MusicPage() {
   const router = useRouter()
@@ -156,8 +155,8 @@ export default function MusicPage() {
   }
 
   return (
-    <div style={{ background: '#000', minHeight: '100dvh' }}>
-      {/* Header with music info */}
+    <div style={{ background: '#000', minHeight: '100dvh', paddingBottom: 100 }}>
+      {/* Header with back button */}
       <div style={{
         position: 'sticky',
         top: 0,
@@ -188,15 +187,32 @@ export default function MusicPage() {
         >
           ←
         </button>
-        
-        {/* Album art */}
         <div style={{
-          width: 48,
-          height: 48,
-          borderRadius: 12,
+          color: 'white',
+          fontSize: 16,
+          fontWeight: 700
+        }}>
+          {music.title}
+        </div>
+      </div>
+
+      {/* Music info section */}
+      <div style={{
+        padding: '24px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 20,
+        borderBottom: '1px solid rgba(255,255,255,0.1)'
+      }}>
+        {/* Large album art */}
+        <div style={{
+          width: 120,
+          height: 120,
+          borderRadius: 16,
           overflow: 'hidden',
           background: 'linear-gradient(135deg,#FF3366,#F97316)',
-          flexShrink: 0
+          flexShrink: 0,
+          boxShadow: '0 8px 32px rgba(255,51,102,0.3)'
         }}>
           {music.album_art ? (
             <img
@@ -211,18 +227,18 @@ export default function MusicPage() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 24
+              fontSize: 48
             }}>🎵</div>
           )}
         </div>
 
-        {/* Music info */}
+        {/* Music details */}
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
             color: 'white',
-            fontSize: 16,
-            fontWeight: 700,
-            marginBottom: 2,
+            fontSize: 20,
+            fontWeight: 800,
+            marginBottom: 8,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap'
@@ -231,34 +247,54 @@ export default function MusicPage() {
           </div>
           <div style={{
             color: 'rgba(255,255,255,0.6)',
-            fontSize: 13,
+            fontSize: 15,
+            marginBottom: 16,
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap'
           }}>
             {music.artist || 'Unknown Artist'}
           </div>
-        </div>
-
-        {/* Post count */}
-        <div style={{
-          background: 'rgba(255,51,102,0.2)',
-          border: '1px solid rgba(255,51,102,0.4)',
-          borderRadius: 16,
-          padding: '6px 12px',
-          fontSize: 12,
-          fontWeight: 700,
-          color: '#FF3366'
-        }}>
-          {posts.length} posts
+          
+          {/* Use this sound button */}
+          <button
+            onClick={() => router.push('/')}
+            style={{
+              width: '100%',
+              padding: '12px 20px',
+              background: 'linear-gradient(135deg,#FF3366,#F97316)',
+              color: 'white',
+              border: 'none',
+              borderRadius: 24,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(255,51,102,0.4)',
+              transition: 'transform 0.2s'
+            }}
+            onMouseEnter={(e) => e.target.style.transform = 'scale(1.02)'}
+            onMouseLeave={(e) => e.target.style.transform = 'scale(1)'}
+          >
+            Use this sound
+          </button>
         </div>
       </div>
 
-      {/* Posts using this music */}
-      <div style={{ paddingBottom: 100 }}>
+      {/* Posts count */}
+      <div style={{
+        padding: '16px 20px',
+        color: 'rgba(255,255,255,0.5)',
+        fontSize: 13,
+        fontWeight: 600
+      }}>
+        {posts.length} {posts.length === 1 ? 'post' : 'posts'}
+      </div>
+
+      {/* Posts grid */}
+      <div style={{ padding: '0 20px' }}>
         {posts.length === 0 ? (
           <div style={{
-            height: '60dvh',
+            height: '40dvh',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -266,20 +302,75 @@ export default function MusicPage() {
             gap: 16
           }}>
             <div style={{ fontSize: 60 }}>🎬</div>
-            <div style={{ color: '#52525B', fontSize: 14, textAlign: 'center', padding: '0 32px' }}>
+            <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, textAlign: 'center', padding: '0 32px' }}>
               No posts using this sound yet. Be the first to create one!
             </div>
           </div>
         ) : (
-          posts.map(post => (
-            <FeedCard
-              key={post.id}
-              post={post}
-              currentUser={currentUser}
-              initialLiked={false}
-              initialSaved={false}
-            />
-          ))
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: 8
+          }}>
+            {posts.map(post => (
+              <div
+                key={post.id}
+                onClick={() => router.push(`/post/${post.id}`)}
+                style={{
+                  aspectRatio: '9/16',
+                  borderRadius: 8,
+                  overflow: 'hidden',
+                  cursor: 'pointer',
+                  position: 'relative',
+                  background: '#1a1a1a'
+                }}
+              >
+                {post.video_url ? (
+                  <video
+                    src={post.video_url}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    muted
+                  />
+                ) : post.images && post.images.length > 0 ? (
+                  <img
+                    src={post.images[0]}
+                    alt={post.title || 'Post'}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 32,
+                    color: 'rgba(255,255,255,0.3)'
+                  }}>📷</div>
+                )}
+                
+                {/* Video indicator */}
+                {post.video_url && (
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 8,
+                    right: 8,
+                    width: 24,
+                    height: 24,
+                    borderRadius: '50%',
+                    background: 'rgba(0,0,0,0.6)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
+                      <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
