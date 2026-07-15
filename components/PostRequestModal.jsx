@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { createRequest, REQUEST_CATEGORIES, RADIUS_OPTIONS } from '../lib/requests'
 import { requestLocation } from '../lib/feed'
+import { supabase } from '../lib/supabase'
 
 const CONDITIONS = ['Brand New', 'Used – Like New', 'Used – Good', 'Any Condition']
 const VISIBILITY_OPTS = [
