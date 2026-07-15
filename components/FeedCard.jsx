@@ -206,7 +206,7 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
       )}
 
       {/* Music pill - Instagram style at top-left */}
-      {!isVideo && (p.music_title || p.music_artist || p.music_file_url) && (
+      {(p.music_title || p.music_artist || p.music_file_url) && (
         <div 
           onClick={(e) => {
             e.stopPropagation()
@@ -218,7 +218,7 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
           }}
           style={{
             position:'absolute',
-            top:'calc(env(safe-area-inset-top,0px)+12px)',
+            top:isVideo ? 'calc(env(safe-area-inset-top,0px)+12px)' : 'calc(env(safe-area-inset-top,0px)+12px)',
             left:12,
             width:44,
             height:44,
@@ -227,7 +227,7 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
             backdropFilter:'blur(8px)',
             border:'1px solid rgba(255,255,255,0.2)',
             cursor:'pointer',
-            zIndex:17,
+            zIndex:18,
             display:'flex',
             alignItems:'center',
             justifyContent:'center',
@@ -460,7 +460,7 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
       )}
 
       {/* Music pill - Instagram style at top-left */}
-      {!isVideo && (p.music_title || p.music_artist || p.music_file_url) && (
+      {(p.music_title || p.music_artist || p.music_file_url) && (
         <div 
           onClick={(e) => {
             e.stopPropagation()
@@ -472,7 +472,7 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
           }}
           style={{
             position:'absolute',
-            top:'calc(env(safe-area-inset-top,0px)+12px)',
+            top:isVideo ? 'calc(env(safe-area-inset-top,0px)+12px)' : 'calc(env(safe-area-inset-top,0px)+12px)',
             left:12,
             width:44,
             height:44,
@@ -481,7 +481,7 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
             backdropFilter:'blur(8px)',
             border:'1px solid rgba(255,255,255,0.2)',
             cursor:'pointer',
-            zIndex:17,
+            zIndex:18,
             display:'flex',
             alignItems:'center',
             justifyContent:'center',
@@ -915,7 +915,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
       )}
 
       {/* Music pill - Instagram style at top-left */}
-      {!isVideo && (p.music_title || p.music_artist || p.music_file_url) && (
+      {(p.music_title || p.music_artist || p.music_file_url) && (
         <div 
           onClick={(e) => {
             e.stopPropagation()
@@ -927,7 +927,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
           }}
           style={{
             position:'absolute',
-            top:'calc(env(safe-area-inset-top,0px)+12px)',
+            top:isVideo ? 'calc(env(safe-area-inset-top,0px)+12px)' : 'calc(env(safe-area-inset-top,0px)+12px)',
             left:12,
             width:44,
             height:44,
@@ -936,7 +936,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
             backdropFilter:'blur(8px)',
             border:'1px solid rgba(255,255,255,0.2)',
             cursor:'pointer',
-            zIndex:17,
+            zIndex:18,
             display:'flex',
             alignItems:'center',
             justifyContent:'center',
