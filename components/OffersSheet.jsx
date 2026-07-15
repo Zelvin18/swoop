@@ -161,8 +161,12 @@ function OfferRow({ offer, isBuyer, updating, onAccept, onReject }) {
     <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
       {/* Seller info */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        <div style={{ width: 42, height: 42, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, color: 'white', flexShrink: 0, border: '2px solid #141414' }}>
-          {init}
+        <div style={{ width: 42, height: 42, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, color: 'white', flexShrink: 0, border: '2px solid #141414', overflow: 'hidden' }}>
+          {seller.avatar_url ? (
+            <img src={seller.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <span>{init}</span>
+          )}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>

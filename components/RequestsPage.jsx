@@ -258,8 +258,12 @@ function RequestCard({ r, currentUser, onViewOffers, onMakeOffer }) {
 
       {/* Header */}
       <div style={{display:'flex',alignItems:'center',gap:10,padding:'14px 14px 10px'}}>
-        <div style={{width:42,height:42,borderRadius:'50%',background:color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:15,color:'white',flexShrink:0,boxShadow:`0 0 0 3px ${color}33`,border:'2px solid #141414'}}>
-          {initial}
+        <div style={{width:42,height:42,borderRadius:'50%',background:color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:15,color:'white',flexShrink:0,boxShadow:`0 0 0 3px ${color}33`,border:'2px solid #141414',overflow:'hidden'}}>
+          {buyer.avatar_url ? (
+            <img src={buyer.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+          ) : (
+            <span>{initial}</span>
+          )}
         </div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{display:'flex',alignItems:'center',gap:5,fontSize:14,fontWeight:700,overflow:'hidden'}}>
