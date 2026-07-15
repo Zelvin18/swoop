@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import { formatUGX, discountPct, fmtDistance, likePost, unlikePost, savePost, unsavePost, sharePost } from '../lib/feed'
 import { getFilterCSS } from '../lib/mediaFilters'
 import { supabase } from '../lib/supabase'
+import { getGlobalMuted, toggleGlobalMuted, subscribeToMuteState, registerMediaElement } from '../lib/globalAudio'
 import ReservationPage    from './ReservationPage'
 import ChatScreen         from './ChatScreen'
 import UserProfileView    from './UserProfileView'
@@ -41,13 +42,29 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
   const filterCSS = getFilterCSS(p.filter_name)
   const [imgIdx,  setImgIdx]  = useState(0)
   const [paused,  setPaused]  = useState(false)
-  const [muted,   setMuted]   = useState(true)
+  const [muted,   setMuted]   = useState(getGlobalMuted())
   const [musicPlaying, setMusicPlaying] = useState(false)
   const [slideshowActive, setSlideshowActive] = useState(false)
   const videoRef  = useRef(null)
   const audioRef  = useRef(null)
   const cardRef   = useRef(null)
   const slideshowTimerRef = useRef(null)
+
+  // Subscribe to global mute state changes
+  useEffect(() => {
+    const unsubscribe = subscribeToMuteState((newMuted) => {
+      setMuted(newMuted)
+      // Apply to video element
+      if (videoRef.current) {
+        videoRef.current.muted = newMuted
+      }
+      // Apply to audio element
+      if (audioRef.current) {
+        audioRef.current.muted = newMuted
+      }
+    })
+    return unsubscribe
+  }, [])
 
   // Play/pause control
   useEffect(() => {
@@ -112,32 +129,55 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
     return () => { unregister(); v.removeEventListener('volumechange', onVolChange) }
   }, [isVideo])
 
-  // IntersectionObserver — pause + mute when scrolled away
+  // IntersectionObserver — pause when scrolled away, respect global mute
   useEffect(() => {
     const v = videoRef.current; const a = audioRef.current; const card = cardRef.current
     if (!card) return
     const obs = new IntersectionObserver(([e]) => {
       if (e.isIntersecting) {
-        if (v) { v.play().catch(()=>{}); setPaused(false) }
-        if (a && p.music_file_url && !isVideo) { a.play().catch(()=>{}); setMusicPlaying(true) }
+        if (v) { 
+          v.play().catch(()=>{}); 
+          setPaused(false)
+          v.muted = muted
+        }
+        if (a && p.music_file_url && !isVideo) { 
+          a.play().catch(()=>{}); 
+          setMusicPlaying(true)
+          a.muted = muted
+        }
         // Start slideshow for multiple images
         if (hasImages && p.images.length > 1 && !isVideo) {
           setSlideshowActive(true)
         }
       } else {
-        if (v) { v.pause(); v.muted = true; setMuted(true) }
+        if (v) { v.pause() }
         if (a) { a.pause(); setMusicPlaying(false) }
         setSlideshowActive(false)
       }
     }, { threshold: 0.6 })
     obs.observe(card)
     return () => obs.disconnect()
-  }, [isVideo, p.music_file_url, hasImages, p.images.length])
+  }, [isVideo, p.music_file_url, hasImages, p.images.length, muted])
 
   return (
     <div ref={cardRef} className="feed-card" onDoubleClick={onDoubleTap}
       style={{position:'relative'}}
-      onClick={()=>{ if(muted && isVideo){ const v=videoRef.current; if(v){v.muted=false;setMuted(false)} } else if (!isVideo && p.music_file_url){ const a=audioRef.current; if(a){ if(musicPlaying){a.pause();setMusicPlaying(false)}else{a.play().catch(()=>{});setMusicPlaying(true)} } } }}
+      onClick={()=>{ 
+        if(muted){ 
+          // Unmute globally - affects all posts in feed
+          toggleGlobalMuted()
+        } else if (!isVideo && p.music_file_url){ 
+          // Toggle music play/pause for image posts
+          const a=audioRef.current; 
+          if(a){ 
+            if(musicPlaying){
+              a.pause();setMusicPlaying(false)
+            }else{
+              a.play().catch(()=>{});setMusicPlaying(true)
+            } 
+          } 
+        } 
+      }}
     >
       {/* Hidden audio element for music */}
       {p.music_file_url && !isVideo && (
@@ -301,7 +341,7 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
   const isVideo   = !!p.video_url
   const hasImages = p.images?.length > 0
   const filterCSS = getFilterCSS(p.filter_name)
-  const [muted,   setMuted]   = useState(true)
+  const [muted,   setMuted]   = useState(getGlobalMuted())
   const [paused,  setPaused]  = useState(false)
   const [imgIdx,  setImgIdx]  = useState(0)
   const [musicPlaying, setMusicPlaying] = useState(false)
@@ -310,6 +350,22 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
   const audioRef  = useRef(null)
   const cardRef   = useRef(null)
   const slideshowTimerRef = useRef(null)
+
+  // Subscribe to global mute state changes
+  useEffect(() => {
+    const unsubscribe = subscribeToMuteState((newMuted) => {
+      setMuted(newMuted)
+      // Apply to video element
+      if (videoRef.current) {
+        videoRef.current.muted = newMuted
+      }
+      // Apply to audio element
+      if (audioRef.current) {
+        audioRef.current.muted = newMuted
+      }
+    })
+    return unsubscribe
+  }, [])
 
   useEffect(()=>{
     const v = videoRef.current; if (!v) return
@@ -354,37 +410,64 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
       const card = cardRef.current; if (!card) return
       const rect = card.getBoundingClientRect()
       const visible = rect.top >= -rect.height * 0.4 && rect.top <= window.innerHeight * 0.6
-      if (visible) { v.muted=false; setMuted(false) }
+      if (visible) { 
+        toggleGlobalMuted()
+      }
     })
     const onVolChange = () => { if (!document.hidden && !v.muted) setMuted(false) }
     v.addEventListener('volumechange', onVolChange)
     return () => { unregister(); v.removeEventListener('volumechange', onVolChange) }
   }, [])
 
-  // Scroll away → pause + mute
+  // Scroll away → pause, respect global mute
   useEffect(()=>{
     const v = videoRef.current; const a = audioRef.current; const card = cardRef.current
     if (!card) return
     const obs = new IntersectionObserver(([e])=>{
       if (e.isIntersecting) {
-        if (v) { v.play().catch(()=>{}); setPaused(false) }
-        if (a && p.music_file_url && !isVideo) { a.play().catch(()=>{}); setMusicPlaying(true) }
+        if (v) { 
+          v.play().catch(()=>{}); 
+          setPaused(false)
+          v.muted = muted
+        }
+        if (a && p.music_file_url && !isVideo) { 
+          a.play().catch(()=>{}); 
+          setMusicPlaying(true)
+          a.muted = muted
+        }
         // Start slideshow for multiple images
         if (hasImages && p.images.length > 1 && !isVideo) {
           setSlideshowActive(true)
         }
       } else {
-        if (v) { v.pause(); v.muted=true; setMuted(true) }
+        if (v) { v.pause() }
         if (a) { a.pause(); setMusicPlaying(false) }
         setSlideshowActive(false)
       }
     }, { threshold:0.6 })
     obs.observe(card)
     return () => obs.disconnect()
-  }, [isVideo, p.music_file_url, hasImages, p.images.length])
+  }, [isVideo, p.music_file_url, hasImages, p.images.length, muted])
 
   return (
-    <div ref={cardRef} className={`feed-card${paused?' paused':''}`} onDoubleClick={onDoubleTap}>
+    <div ref={cardRef} className={`feed-card${paused?' paused':''}`} onDoubleClick={onDoubleTap}
+      onClick={()=>{ 
+        if(muted){ 
+          // Unmute globally - affects all posts in feed
+          toggleGlobalMuted()
+        } else if (!isVideo && p.music_file_url){ 
+          // Toggle music play/pause for image posts
+          const a=audioRef.current; 
+          if(a){ 
+            if(musicPlaying){
+              a.pause();setMusicPlaying(false)
+            }else{
+              a.play().catch(()=>{});setMusicPlaying(true)
+            } 
+          } 
+        } 
+      }}
+    >
       {/* Hidden audio element for music */}
       {p.music_file_url && !isVideo && (
         <audio
@@ -578,7 +661,7 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   const [showReserve, setShowReserve] = useState(false)
   const [showChat,    setShowChat]    = useState(false)
   const [conversation,setConversation]= useState(null)
-  const [muted,       setMuted]       = useState(true)
+  const [muted,       setMuted]       = useState(getGlobalMuted())
   const [imgIdx,      setImgIdx]      = useState(0)
   const [musicPlaying, setMusicPlaying] = useState(false)
   const [slideshowActive, setSlideshowActive] = useState(false)
@@ -588,6 +671,22 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   const audioRef    = useRef(null)
   const productRef  = useRef(null)
   const slideshowTimerRef = useRef(null)
+
+  // Subscribe to global mute state changes
+  useEffect(() => {
+    const unsubscribe = subscribeToMuteState((newMuted) => {
+      setMuted(newMuted)
+      // Apply to video element
+      if (videoRef.current) {
+        videoRef.current.muted = newMuted
+      }
+      // Apply to audio element
+      if (audioRef.current) {
+        audioRef.current.muted = newMuted
+      }
+    })
+    return unsubscribe
+  }, [])
 
   const seller      = p.seller || {}
   const sellerColor = avatarColor(seller.id||'')
@@ -653,7 +752,9 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
       const card = productRef.current; if (!card) return
       const rect = card.getBoundingClientRect()
       const visible = rect.top >= -rect.height * 0.4 && rect.top <= window.innerHeight * 0.6
-      if (visible) { v.muted=false; setMuted(false) }
+      if (visible) { 
+        toggleGlobalMuted()
+      }
     })
     const onVolChange = () => { if (!document.hidden && !v.muted) setMuted(false) }
     v.addEventListener('volumechange', onVolChange)
@@ -665,22 +766,30 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
     if (!card) return
     const obs = new IntersectionObserver(([e])=>{
       if (e.isIntersecting){
-        if (v && isProductVideo) { v.play().catch(()=>{}); setPaused(false) }
-        if (a && p.music_file_url && !isProductVideo) { a.play().catch(()=>{}); setMusicPlaying(true) }
+        if (v && isProductVideo) { 
+          v.play().catch(()=>{}); 
+          setPaused(false)
+          v.muted = muted
+        }
+        if (a && p.music_file_url && !isProductVideo) { 
+          a.play().catch(()=>{}); 
+          setMusicPlaying(true)
+          a.muted = muted
+        }
         // Start slideshow for multiple images
         const hasImages = p.images?.length > 0
         if (hasImages && p.images.length > 1 && !isProductVideo) {
           setSlideshowActive(true)
         }
       } else {
-        if (v) { v.pause(); v.muted=true; setMuted(true) }
+        if (v) { v.pause() }
         if (a) { a.pause(); setMusicPlaying(false) }
         setSlideshowActive(false)
       }
     }, { threshold:0.6 })
     obs.observe(card)
     return () => obs.disconnect()
-  }, [isProductVideo, p.music_file_url, p.images])
+  }, [isProductVideo, p.music_file_url, p.images, muted])
 
   const handleLike = async () => {
     if (!currentUser) return
@@ -805,7 +914,22 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
   return (
     <div ref={productRef} className={`feed-card${paused?' paused':''}`}
       onDoubleClick={handleDoubleTap}
-      onClick={()=>{ if(muted && isVideo){ const v=videoRef.current; if(v){v.muted=false;setMuted(false)} } else if (!isVideo && p.music_file_url){ const a=audioRef.current; if(a){ if(musicPlaying){a.pause();setMusicPlaying(false)}else{a.play().catch(()=>{});setMusicPlaying(true)} } } }}
+      onClick={()=>{ 
+        if(muted){ 
+          // Unmute globally - affects all posts in feed
+          toggleGlobalMuted()
+        } else if (!isVideo && p.music_file_url){ 
+          // Toggle music play/pause for image posts
+          const a=audioRef.current; 
+          if(a){ 
+            if(musicPlaying){
+              a.pause();setMusicPlaying(false)
+            }else{
+              a.play().catch(()=>{});setMusicPlaying(true)
+            } 
+          } 
+        } 
+      }}
     >
       {/* Hidden audio element for music */}
       {p.music_file_url && !isVideo && (
