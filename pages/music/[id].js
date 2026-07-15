@@ -23,13 +23,16 @@ export default function MusicPage() {
     async function loadMusicData() {
       setLoading(true)
       try {
+        // Decode the ID if it's URL-encoded (for music_file_url cases)
+        const decodedId = decodeURIComponent(id)
+
         // Try to fetch music details from music table
         let musicData = null
         try {
           const { data, error } = await supabase
             .from('music')
             .select('*')
-            .eq('id', id)
+            .eq('id', decodedId)
             .single()
           if (!error && data) {
             musicData = data
@@ -45,7 +48,7 @@ export default function MusicPage() {
             *,
             seller:profiles(*)
           `)
-          .eq('music_id', id)
+          .eq('music_id', decodedId)
           .order('created_at', { ascending: false })
 
         let postsData = []
@@ -62,7 +65,7 @@ export default function MusicPage() {
               *,
               seller:profiles(*)
             `)
-            .eq('music_file_url', id)
+            .eq('music_file_url', decodedId)
             .order('created_at', { ascending: false })
           if (!urlError && postsByUrl) {
             postsData = postsByUrl
@@ -73,11 +76,11 @@ export default function MusicPage() {
         if (!musicData && postsData.length > 0) {
           const firstPost = postsData[0]
           musicData = {
-            id: id,
+            id: decodedId,
             title: firstPost.music_title || 'Unknown Track',
             artist: firstPost.music_artist || 'Unknown Artist',
             album_art: firstPost.music_album_art || null,
-            file_url: firstPost.music_file_url || id
+            file_url: firstPost.music_file_url || decodedId
           }
         }
 

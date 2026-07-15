@@ -242,8 +242,8 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
         <div 
           onClick={(e) => {
             e.stopPropagation()
-            // Navigate to music page using music_id or music_file_url as identifier
-            const musicId = p.music_id || p.music_file_url
+            // Navigate to music page using music_id or encoded music_file_url as identifier
+            const musicId = p.music_id || (p.music_file_url ? encodeURIComponent(p.music_file_url) : null)
             if (musicId) {
               router.push(`/music/${musicId}`)
             }
@@ -531,8 +531,8 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
         <div 
           onClick={(e) => {
             e.stopPropagation()
-            // Navigate to music page using music_id or music_file_url as identifier
-            const musicId = p.music_id || p.music_file_url
+            // Navigate to music page using music_id or encoded music_file_url as identifier
+            const musicId = p.music_id || (p.music_file_url ? encodeURIComponent(p.music_file_url) : null)
             if (musicId) {
               router.push(`/music/${musicId}`)
             }
@@ -1019,8 +1019,8 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
         <div 
           onClick={(e) => {
             e.stopPropagation()
-            // Navigate to music page using music_id or music_file_url as identifier
-            const musicId = p.music_id || p.music_file_url
+            // Navigate to music page using music_id or encoded music_file_url as identifier
+            const musicId = p.music_id || (p.music_file_url ? encodeURIComponent(p.music_file_url) : null)
             if (musicId) {
               router.push(`/music/${musicId}`)
             }
