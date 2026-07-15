@@ -82,7 +82,7 @@ export default function RequestsPage({ showToast, currentUser }) {
   const displayRequests = showSearch && searchQuery ? searchResults : requests
 
   return (
-    <div style={{ paddingBottom: 24, fontFamily:"'Inter',sans-serif" }}>
+    <div style={{ paddingBottom: 'calc(var(--nav-h, 50px) + env(safe-area-inset-bottom, 0px) + 24px)', fontFamily:"'Inter',sans-serif" }}>
       {/* ── Header ── */}
       {!showSearch ? (
         <div className="page-header">
@@ -258,7 +258,7 @@ function RequestCard({ r, currentUser, onViewOffers, onMakeOffer }) {
 
       {/* Header */}
       <div style={{display:'flex',alignItems:'center',gap:10,padding:'14px 14px 10px'}}>
-        <div style={{width:42,height:42,borderRadius:'50%',background:color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:15,color:'white',flexShrink:0,boxShadow:`0 0 0 3px ${color}33`}}>
+        <div style={{width:42,height:42,borderRadius:'50%',background:color,display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900,fontSize:15,color:'white',flexShrink:0,boxShadow:`0 0 0 3px ${color}33`,border:'2px solid #141414'}}>
           {initial}
         </div>
         <div style={{flex:1,minWidth:0}}>
@@ -281,8 +281,14 @@ function RequestCard({ r, currentUser, onViewOffers, onMakeOffer }) {
 
       {/* Body */}
       <div style={{display:'flex',gap:12,padding:'0 14px 10px'}}>
-        <div style={{width:76,height:76,borderRadius:12,background:`linear-gradient(135deg,${color}22,${color}11)`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:34,flexShrink:0,border:'1px solid rgba(255,255,255,0.06)'}}>
-          {CAT_EMOJI[r.category]||'📦'}
+        <div style={{width:76,height:76,borderRadius:12,overflow:'hidden',flexShrink:0,border:'1px solid rgba(255,255,255,0.06)',background:`linear-gradient(135deg,${color}22,${color}11)`}}>
+          {r.images && r.images.length > 0 ? (
+            <img src={r.images[0]} alt="Product" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+          ) : (
+            <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',fontSize:34}}>
+              {CAT_EMOJI[r.category]||'📦'}
+            </div>
+          )}
         </div>
         <div style={{flex:1,minWidth:0}}>
           <div style={{fontSize:15,fontWeight:800,marginBottom:4,lineHeight:1.2}}>{r.title}</div>

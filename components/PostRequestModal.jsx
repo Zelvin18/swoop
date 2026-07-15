@@ -24,6 +24,8 @@ export default function PostRequestModal({ currentUser, onClose, onPosted }) {
   const [visibility, setVisibility] = useState('everyone')
   const [posting,    setPosting]    = useState(false)
   const [locLoading, setLocLoading] = useState(false)
+  const [imageUrl,   setImageUrl]   = useState('')
+  const [uploading,  setUploading]  = useState(false)
 
   const canSubmit = title.trim().length >= 3
 
@@ -36,6 +38,49 @@ export default function PostRequestModal({ currentUser, onClose, onPosted }) {
     setLocLoading(false)
   }
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file')
+      return
+    }
+
+    // Validate file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Image must be less than 5MB')
+      return
+    }
+
+    setUploading(true)
+    try {
+      // Upload to Supabase Storage
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`
+      const filePath = `request-images/${currentUser.id}/${fileName}`
+
+      const { error: uploadError } = await supabase.storage
+        .from('request-images')
+        .upload(filePath, file)
+
+      if (uploadError) throw uploadError
+
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('request-images')
+        .getPublicUrl(filePath)
+
+      setImageUrl(publicUrl)
+    } catch (error) {
+      console.error('Error uploading image:', error)
+      alert('Failed to upload image. Please try again.')
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const handleSubmit = async () => {
     if (!canSubmit || !currentUser) return
     setPosting(true)
@@ -43,6 +88,7 @@ export default function PostRequestModal({ currentUser, onClose, onPosted }) {
       buyerId: currentUser.id, title: title.trim(), description: desc.trim(),
       category, budgetMin, budgetMax, colorPref, conditionPref: condition,
       location, lat, lng, radiusKm: radius, visibility,
+      images: imageUrl ? [imageUrl] : [],
     })
     setPosting(false)
     if (req) { onPosted?.(req); onClose() }
@@ -128,6 +174,71 @@ export default function PostRequestModal({ currentUser, onClose, onPosted }) {
                       }}
                     >{c}</button>
                   ))}
+                </div>
+              </div>
+
+              <div style={S.fieldWrap}>
+                <div style={S.fieldLabel}>Product Image <span style={{ color: '#71717A', fontWeight: 400 }}>(optional)</span></div>
+                <div style={{ position: 'relative' }}>
+                  {imageUrl ? (
+                    <div style={{ position: 'relative', width: '100%', aspectRatio: '4/3', borderRadius: 12, overflow: 'hidden', background: '#141414', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <img src={imageUrl} alt="Product" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <button
+                        onClick={() => setImageUrl('')}
+                        style={{
+                          position: 'absolute',
+                          top: 8,
+                          right: 8,
+                          width: 28,
+                          height: 28,
+                          borderRadius: '50%',
+                          background: 'rgba(0,0,0,0.7)',
+                          border: 'none',
+                          color: 'white',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                        }}
+                      >
+                        <i className="fas fa-times" style={{ fontSize: 12 }} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                      aspectRatio: '4/3',
+                      borderRadius: 12,
+                      background: '#141414',
+                      border: '2px dashed rgba(255,255,255,0.15)',
+                      cursor: uploading ? 'not-allowed' : 'pointer',
+                      transition: 'all 0.2s',
+                    }}>
+                      {uploading ? (
+                        <>
+                          <i className="fas fa-spinner fa-spin" style={{ fontSize: 24, color: '#FF3366', marginBottom: 8 }} />
+                          <span style={{ fontSize: 12, color: '#71717A' }}>Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <i className="fas fa-camera" style={{ fontSize: 24, color: '#52525B', marginBottom: 8 }} />
+                          <span style={{ fontSize: 12, color: '#71717A' }}>Tap to add image</span>
+                          <span style={{ fontSize: 10, color: '#52525B', marginTop: 4 }}>Max 5MB</span>
+                        </>
+                      )}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        disabled={uploading}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  )}
                 </div>
               </div>
 
@@ -297,6 +408,7 @@ export default function PostRequestModal({ currentUser, onClose, onPosted }) {
                 <SummaryRow label="Category"   val={category || 'Not specified'} />
                 <SummaryRow label="Condition"  val={condition} />
                 {colorPref && <SummaryRow label="Colour"  val={colorPref} />}
+                {imageUrl && <SummaryRow label="Image"     val="✓ Added" />}
                 <SummaryRow label="Budget"
                   val={budgetMin || budgetMax
                     ? `UGX ${budgetMin ? Number(budgetMin).toLocaleString() : '0'} – ${budgetMax ? Number(budgetMax).toLocaleString() : '∞'}`

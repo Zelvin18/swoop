@@ -161,7 +161,7 @@ function OfferRow({ offer, isBuyer, updating, onAccept, onReject }) {
     <div style={{ padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
       {/* Seller info */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        <div style={{ width: 42, height: 42, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, color: 'white', flexShrink: 0 }}>
+        <div style={{ width: 42, height: 42, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, color: 'white', flexShrink: 0, border: '2px solid #141414' }}>
           {init}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -275,7 +275,7 @@ const S = {
   headerTitle: { fontSize: 17, fontWeight: 800, marginBottom: 2 },
   headerSub:   { fontSize: 12, color: '#71717A' },
   closeBtn: { width: 28, height: 28, borderRadius: '50%', background: '#1e1e1e', border: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#A1A1AA', flexShrink: 0 },
-  body: { flex: 1, overflowY: 'auto', scrollbarWidth: 'none' },
+  body: { flex: 1, overflowY: 'auto', scrollbarWidth: 'none', paddingBottom: 'calc(var(--nav-h, 50px) + env(safe-area-inset-bottom, 0px) + 16px)' },
   center: { display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 48 },
   emptyState: { display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px' },
   requestSummary: { background: '#141414', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 14, padding: '14px', marginBottom: 14 },
