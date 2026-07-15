@@ -196,14 +196,6 @@ function SocialCard({ p, seller, sellerColor, sellerInitial, liked, likes, saved
         </div>
       )}
 
-      {/* Mute pill — only shown when muted */}
-      {isVideo && muted && (
-        <button onClick={e=>{e.stopPropagation();const v=videoRef.current;if(v){v.muted=false;setMuted(false)}}}
-          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-          Tap or raise volume
-        </button>
-      )}
 
       {/* Music pill - Instagram style at top-left */}
       {(p.music_title || p.music_artist || p.music_file_url) && (
@@ -450,14 +442,6 @@ function ServiceCard({ p, seller, sellerColor, sellerInitial, liked, likes, save
         </div>
       )}
 
-      {/* Mute pill — only shown when muted */}
-      {isVideo && muted && (
-        <button onClick={e=>{e.stopPropagation();const v=videoRef.current;if(v){v.muted=false;setMuted(false)}}}
-          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-          Tap or raise volume
-        </button>
-      )}
 
       {/* Music pill - Instagram style at top-left */}
       {(p.music_title || p.music_artist || p.music_file_url) && (
@@ -905,14 +889,6 @@ export default function FeedCard({ post: p, currentUser, initialLiked=false, ini
         </div>
       )}
 
-      {/* Mute pill — top left — only visible when muted, auto-hides when unmuted */}
-      {isVideo && muted && (
-        <button onClick={e=>{e.stopPropagation();const v=videoRef.current;if(v){v.muted=false;setMuted(false)}}}
-          style={{position:'absolute',top:'calc(env(safe-area-inset-top,0px)+58px)',left:14,display:'flex',alignItems:'center',gap:5,background:'rgba(0,0,0,0.55)',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)',borderRadius:20,padding:'6px 12px',cursor:'pointer',zIndex:17,color:'white',fontSize:11,fontWeight:600,letterSpacing:'-0.2px',boxShadow:'0 2px 8px rgba(0,0,0,0.4)'}}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
-          Tap or raise volume
-        </button>
-      )}
 
       {/* Music pill - Instagram style at top-left */}
       {(p.music_title || p.music_artist || p.music_file_url) && (
