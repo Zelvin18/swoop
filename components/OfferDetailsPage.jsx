@@ -306,16 +306,16 @@ export default function OfferDetailsPage({ offer, request, currentUser, onBack, 
           </div>
         )}
 
-        <div style={{ height: 120 }} />
+        <div style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 160px)' }} />
       </div>
 
       {/* ── Fixed action footer ── */}
       {offer.status === 'pending' && (
         <div style={{
           flexShrink: 0, padding: '12px 16px',
-          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
           borderTop: '1px solid rgba(255,255,255,0.07)',
-          background: 'rgba(0,0,0,0.95)', backdropFilter: 'blur(16px)',
+          background: '#000', backdropFilter: 'blur(16px)',
           display: 'flex', flexDirection: 'column', gap: 8,
         }}>
           {/* Accept button */}

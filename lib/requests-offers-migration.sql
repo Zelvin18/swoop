@@ -4,6 +4,11 @@
 -- All statements are idempotent (safe to run multiple times)
 -- ============================================================
 
+-- 0. Drop the unique constraint that blocks multiple offers per seller per request
+--    (a seller should be able to update/resend their offer)
+alter table offers
+  drop constraint if exists offers_request_id_seller_id_key;
+
 -- 1. Add new detail columns to offers table
 alter table offers
   add column if not exists negotiable      boolean default true,

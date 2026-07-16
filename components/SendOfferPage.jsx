@@ -91,6 +91,7 @@ export default function SendOfferPage({ request, currentUser, onClose, onSubmitt
       {/* ── Scrollable body ── */}
       <div style={{
         flex: 1, overflowY: 'auto', scrollbarWidth: 'none', padding: 16,
+        paddingBottom: 100,
       }}>
 
         {/* You are offering for */}
@@ -307,9 +308,10 @@ export default function SendOfferPage({ request, currentUser, onClose, onSubmitt
       <div style={{
         flexShrink: 0,
         padding: '12px 16px',
-        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)',
+        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
         borderTop: '1px solid rgba(255,255,255,0.07)',
-        background: 'rgba(0,0,0,0.95)',
+        background: '#000',
+        backdropFilter: 'blur(16px)',
       }}>
         {/* Error box */}
         {error ? (

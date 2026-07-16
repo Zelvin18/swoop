@@ -168,7 +168,7 @@ export default function OffersInbox({ request, currentUser, onBack, onViewOffer 
           />
         ))}
 
-        <div style={{ height: 'calc(var(--nav-h, 50px) + env(safe-area-inset-bottom, 0px) + 16px)' }} />
+        <div style={{ height: 'calc(env(safe-area-inset-bottom, 0px) + 24px)' }} />
       </div>
 
       <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
