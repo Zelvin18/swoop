@@ -125,10 +125,10 @@ export default function LivePage({ showToast, user }) {
     return <GoLiveSetupPage onClose={() => setView('list')} onStartSell={handleStartSell} onStartSocial={handleStartSocial} />
 
   if (view === 'sell-host')
-    return <LiveSellingPage config={liveConfig} onEnd={handleEndLive} />
+    return <LiveSellingPage config={liveConfig} currentUser={user} onEnd={handleEndLive} />
 
   if (view === 'social-host')
-    return <LiveSocialPage config={liveConfig} onEnd={handleEndLive} />
+    return <LiveSocialPage config={liveConfig} currentUser={user} onEnd={handleEndLive} />
 
   if (view === 'viewer' && activeStream)
     return <LiveViewerPage stream={activeStream} currentUser={user} onClose={() => { setView('list'); loadStreams() }} />
