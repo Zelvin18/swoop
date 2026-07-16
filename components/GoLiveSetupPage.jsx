@@ -39,12 +39,29 @@ export default function GoLiveSetupPage({ onClose, onStartSell, onStartSocial })
           <div style={{ width: 36 }} />
         </div>
 
-        {/* Camera preview */}
+        {/* Static camera placeholder on mode-select — don't start camera yet */}
         <div style={s.cameraPreview}>
-          <CameraPreview facingMode={cameraFront?'user':'environment'} style={{width:'100%',height:'100%'}}/>
-          <button onClick={() => setCameraFront(f => !f)} style={s.flipBtn}>
-            <i className="fas fa-camera-rotate" style={{ fontSize: 16 }} />
-          </button>
+          <div style={{
+            width:'100%', height:'100%',
+            background:'linear-gradient(160deg,#0a001a,#0d0030,#080820)',
+            display:'flex', flexDirection:'column',
+            alignItems:'center', justifyContent:'center', gap:12,
+          }}>
+            <div style={{
+              width:72, height:72, borderRadius:'50%',
+              background:'rgba(255,255,255,0.06)',
+              border:'2px solid rgba(255,255,255,0.1)',
+              display:'flex', alignItems:'center', justifyContent:'center',
+            }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="1.5" strokeLinecap="round">
+                <path d="M23 7l-7 5 7 5V7z"/>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+              </svg>
+            </div>
+            <div style={{ fontSize:12, color:'rgba(255,255,255,0.3)', textAlign:'center', lineHeight:1.5 }}>
+              Camera starts when you<br/>choose a live type below
+            </div>
+          </div>
         </div>
 
         {/* Mode choice */}
