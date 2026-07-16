@@ -6,6 +6,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { formatUGX } from '../lib/feed'
+import OverlayPortal from './OverlayPortal'
 
 export default function ReservationPage({ post, seller, currentUser, onBack, onConfirmed }) {
   const [paymentOption, setPaymentOption] = useState('full')   // 'full' | 'half'
@@ -72,6 +73,7 @@ export default function ReservationPage({ post, seller, currentUser, onBack, onC
   }
 
   return (
+    <OverlayPortal>
     <div style={S.page}>
       {/* Header */}
       <div style={S.header}>
@@ -219,7 +221,7 @@ export default function ReservationPage({ post, seller, currentUser, onBack, onC
       </div>
 
       {/* ── Confirm button ── */}
-      <div style={{ padding:'12px 16px', paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 12px)', borderTop:'1px solid rgba(255,255,255,0.07)', background:'rgba(0,0,0,0.95)', backdropFilter:'blur(16px)', flexShrink:0 }}>
+      <div style={{ padding:'12px 16px', paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 16px)', borderTop:'1px solid rgba(255,255,255,0.07)', background:'rgba(0,0,0,0.98)', backdropFilter:'blur(16px)', flexShrink:0 }}>
         <button onClick={handleConfirm} disabled={loading} style={{ width:'100%', padding:'15px', background:loading?'#333':'linear-gradient(135deg,#FF3366,#FF6633)', border:'none', borderRadius:14, color:'white', fontSize:15, fontWeight:700, cursor:'pointer', fontFamily:'inherit', display:'flex', alignItems:'center', justifyContent:'center', gap:8, boxShadow:loading?'none':'0 4px 20px rgba(255,51,102,0.45)' }}>
           {loading ? (
             <><div style={{width:18,height:18,border:'2px solid rgba(255,255,255,0.3)',borderTopColor:'white',borderRadius:'50%',animation:'spin 0.7s linear infinite'}}/> Processing...</>
@@ -230,6 +232,7 @@ export default function ReservationPage({ post, seller, currentUser, onBack, onC
       </div>
       <style>{`@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}`}</style>
     </div>
+    </OverlayPortal>
   )
 }
 

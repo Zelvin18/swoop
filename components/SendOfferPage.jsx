@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { makeOffer } from '../lib/requests'
+import OverlayPortal from './OverlayPortal'
 
 const CAT_EMOJI = {
   Phones: '📱', Electronics: '💻', Fashion: '👗', Sneakers: '👟',
@@ -54,6 +55,7 @@ export default function SendOfferPage({ request, currentUser, onClose, onSubmitt
 
   /* ── Render ─────────────────────────────────────────────────────────────── */
   return (
+    <OverlayPortal>
     <div style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       background: '#000', display: 'flex', flexDirection: 'column',
@@ -352,5 +354,6 @@ export default function SendOfferPage({ request, currentUser, onClose, onSubmitt
         </button>
       </div>
     </div>
+    </OverlayPortal>
   )
 }

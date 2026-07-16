@@ -303,6 +303,13 @@ export default function RequestsPage({ showToast, currentUser }) {
           setSelectedOffer(offer)
           setActivePage('reservation')
         }}
+        onOpenChat={(seller) => {
+          // Close offers flow and signal parent to open inbox
+          setActivePage(null)
+          setSelectedRequest(null)
+          setSelectedOffer(null)
+          showToast('Opening chat...')
+        }}
       />
     )}
 
