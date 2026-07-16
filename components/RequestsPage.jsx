@@ -1,9 +1,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
-import { fetchRequests, searchRequests, fmtBudget, REQUEST_CATEGORIES } from '../lib/requests'
+import { fetchRequests, fetchRequestOfferAvatars, searchRequests, fmtBudget, REQUEST_CATEGORIES } from '../lib/requests'
 import { requestLocation, saveUserLocation, haversineKm } from '../lib/feed'
-import PostRequestModal from './PostRequestModal'
-import OffersSheet      from './OffersSheet'
+import PostRequestModal  from './PostRequestModal'
+import SendOfferPage     from './SendOfferPage'
+import OffersInbox       from './OffersInbox'
+import OfferDetailsPage  from './OfferDetailsPage'
+import ReservationPage   from './ReservationPage'
 
 const COLORS = ['#7C3AED','#FF3366','#F97316','#22C55E','#3B82F6','#EC4899','#F59E0B','#06B6D4']
 const CAT_EMOJI = { Phones:'📱',Electronics:'💻',Fashion:'👗',Sneakers:'👟',Home:'🏠',Beauty:'💄',Cars:'🚗',Furniture:'🛋️',Sports:'⚽',Other:'📦' }
@@ -12,7 +15,7 @@ const LOC_KEY = 'swoop_req_location_asked'
 function avatarColor(id='') { return COLORS[id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%COLORS.length] }
 function initials(n='') { return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?' }
 
-const FILTERS = ['All Requests','Near You','Following','Categories']
+const FILTERS = ['My Requests','All Requests','Near You','Following','Categories']
 
 export default function RequestsPage({ showToast, currentUser }) {
   const [filter,       setFilter]       = useState('All Requests')
@@ -31,12 +34,21 @@ export default function RequestsPage({ showToast, currentUser }) {
   const [locStatus,    setLocStatus]    = useState('idle')
   const searchRef = useRef(null)
 
+  const [activePage,      setActivePage]      = useState(null)  // null | 'sendOffer' | 'offersInbox' | 'offerDetails' | 'reservation'
+  const [selectedOffer,   setSelectedOffer]   = useState(null)
+  const [myRequestsTab,   setMyRequestsTab]   = useState('Active') // 'Active' | 'Completed'
+
   const loadRequests = useCallback(async () => {
     setLoading(true)
-    const data = await fetchRequests({ filter, category, currentUserId: currentUser?.id, userLat, userLng })
-    setRequests(data)
+    const data = await fetchRequests({ filter, category, currentUserId: currentUser?.id, userLat, userLng, myRequestsStatus: filter === 'My Requests' ? (myRequestsTab === 'Active' ? 'open' : 'fulfilled') : null })
+    if (data.length > 0) {
+      const avatarMap = await fetchRequestOfferAvatars(data.map(r => r.id))
+      setRequests(data.map(r => ({ ...r, _offerAvatars: avatarMap[r.id] || [] })))
+    } else {
+      setRequests([])
+    }
     setLoading(false)
-  }, [filter, category, currentUser?.id, userLat, userLng])
+  }, [filter, category, currentUser?.id, userLat, userLng, myRequestsTab])
 
   useEffect(() => { loadRequests() }, [loadRequests])
 
@@ -82,6 +94,7 @@ export default function RequestsPage({ showToast, currentUser }) {
   const displayRequests = showSearch && searchQuery ? searchResults : requests
 
   return (
+    <>
     <div style={{ paddingBottom: 'calc(var(--nav-h, 50px) + env(safe-area-inset-bottom, 0px) + 24px)', fontFamily:"'Inter',sans-serif" }}>
       {/* ── Header ── */}
       {!showSearch ? (
@@ -147,6 +160,20 @@ export default function RequestsPage({ showToast, currentUser }) {
         </div>
       )}
 
+      {/* ── My Requests Active/Completed tabs ── */}
+      {filter === 'My Requests' && !showSearch && (
+        <div style={{display:'flex',gap:0,margin:'8px 16px 4px',background:'#141414',borderRadius:12,padding:4,border:'1px solid rgba(255,255,255,0.07)'}}>
+          {['Active','Completed'].map(tab => (
+            <button key={tab}
+              onClick={()=>setMyRequestsTab(tab)}
+              style={{flex:1,padding:'8px',borderRadius:9,fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',border:'none',background:myRequestsTab===tab?'#FF3366':'transparent',color:myRequestsTab===tab?'white':'#71717A',transition:'all 0.15s'}}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* ── Post Request banner ── */}
       {!showSearch && (
         <div style={{margin:'12px 16px',padding:'14px 16px',background:'#141414',border:'1px solid rgba(255,255,255,0.07)',borderRadius:16,display:'flex',alignItems:'center',gap:12}}>
@@ -195,13 +222,15 @@ export default function RequestsPage({ showToast, currentUser }) {
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'56px 24px',gap:10}}>
           <div style={{fontSize:52,marginBottom:4}}>📭</div>
           <div style={{fontSize:17,fontWeight:800,color:'#fff'}}>
-            {filter==='Following' ? 'No requests from people you follow'
+            {filter==='My Requests' ? `No ${myRequestsTab.toLowerCase()} requests`
+             : filter==='Following' ? 'No requests from people you follow'
              : filter==='Near You' && locStatus==='denied' ? 'Location needed for Near You'
              : category ? `No ${category} requests yet`
              : 'No requests yet'}
           </div>
           <div style={{fontSize:13,color:'#52525B',textAlign:'center',lineHeight:1.6,maxWidth:280}}>
-            {filter==='Near You' && locStatus==='denied'
+            {filter==='My Requests' ? 'Post a request to start receiving offers'
+             : filter==='Near You' && locStatus==='denied'
               ? 'Enable location access to see requests from nearby buyers'
               : 'Be the first to post what you\'re looking for'}
           </div>
@@ -220,8 +249,8 @@ export default function RequestsPage({ showToast, currentUser }) {
           key={r.id}
           r={r}
           currentUser={currentUser}
-          onViewOffers={()=>setSelectedRequest(r)}
-          onMakeOffer={()=>setSelectedRequest(r)}
+          onViewOffers={()=>{ setSelectedRequest(r); setActivePage('offersInbox') }}
+          onMakeOffer={()=>{ setSelectedRequest(r); setActivePage('sendOffer') }}
         />
       ))}
 
@@ -234,15 +263,72 @@ export default function RequestsPage({ showToast, currentUser }) {
         />
       )}
 
-      {selectedRequest && (
-        <OffersSheet
-          request={selectedRequest}
-          currentUser={currentUser}
-          onClose={()=>setSelectedRequest(null)}
-          onAccepted={()=>{ setSelectedRequest(null); showToast('✅ Offer accepted!') }}
-        />
-      )}
     </div>
+
+    {/* ── Full-screen overlays — state machine ── */}
+
+    {activePage === 'sendOffer' && selectedRequest && (
+      <SendOfferPage
+        request={selectedRequest}
+        currentUser={currentUser}
+        onClose={() => setActivePage(null)}
+        onSubmitted={() => {
+          setActivePage(null)
+          loadRequests()
+          showToast('✅ Offer sent!')
+        }}
+      />
+    )}
+
+    {activePage === 'offersInbox' && selectedRequest && (
+      <OffersInbox
+        request={selectedRequest}
+        currentUser={currentUser}
+        onBack={() => setActivePage(null)}
+        onViewOffer={(offer) => {
+          setSelectedOffer(offer)
+          setActivePage('offerDetails')
+        }}
+      />
+    )}
+
+    {activePage === 'offerDetails' && selectedOffer && selectedRequest && (
+      <OfferDetailsPage
+        offer={selectedOffer}
+        request={selectedRequest}
+        currentUser={currentUser}
+        onBack={() => setActivePage('offersInbox')}
+        onDeclined={() => setActivePage('offersInbox')}
+        onAccepted={(offer) => {
+          setSelectedOffer(offer)
+          setActivePage('reservation')
+        }}
+      />
+    )}
+
+    {activePage === 'reservation' && selectedOffer && selectedRequest && (
+      <ReservationPage
+        post={{
+          id:          selectedOffer.id,
+          title:       selectedRequest.title,
+          description: selectedOffer.message,
+          price:       selectedOffer.price,
+          images:      selectedOffer.images || [],
+          seller_id:   selectedOffer.seller_id,
+        }}
+        seller={selectedOffer.seller}
+        currentUser={currentUser}
+        onBack={() => setActivePage('offerDetails')}
+        onConfirmed={() => {
+          setActivePage(null)
+          setSelectedRequest(null)
+          setSelectedOffer(null)
+          loadRequests()
+          showToast('✅ Reservation confirmed!')
+        }}
+      />
+    )}
+    </>
   )
 }
 
@@ -324,8 +410,13 @@ function RequestCard({ r, currentUser, onViewOffers, onMakeOffer }) {
           {hasOffers ? (
             <>
               <div style={{display:'flex'}}>
-                {Array.from({length:Math.min(3,r.offers_count)},(_,i)=>(
-                  <div key={i} style={{width:22,height:22,borderRadius:'50%',background:COLORS[i],border:'2px solid #141414',marginLeft:i===0?0:-7,fontSize:9,fontWeight:700,color:'white',display:'flex',alignItems:'center',justifyContent:'center'}}>{String.fromCharCode(65+i)}</div>
+                {(r._offerAvatars || []).map((av, i) => (
+                  <div key={i} style={{width:22,height:22,borderRadius:'50%',background:avatarColor(av.seller_id||''),border:'2px solid #141414',marginLeft:i===0?0:-7,overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:700,color:'white',flexShrink:0}}>
+                    {av.avatar_url
+                      ? <img src={av.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}} />
+                      : <span>{initials(av.full_name||av.username||'S')}</span>
+                    }
+                  </div>
                 ))}
               </div>
               <span style={{fontSize:12,color:'#7C3AED',fontWeight:700}}>{r.offers_count} {r.offers_count===1?'offer':'offers'}</span>
