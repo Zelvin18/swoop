@@ -229,11 +229,11 @@ function MakeOfferForm({ request, currentUser, onCancel, onSubmitted }) {
   const handleSubmit = async () => {
     if (!message.trim()) return
     setSending(true)
-    const offer = await makeOffer({ requestId: request.id, sellerId: currentUser.id, message: message.trim(), price })
+    const result = await makeOffer({ requestId: request.id, sellerId: currentUser.id, message: message.trim(), price })
     setSending(false)
-    if (offer) {
+    if (result?.data) {
       const { data: seller } = await supabase.from('profiles').select('id, full_name, username, avatar_url, verified, location, rating').eq('id', currentUser.id).single()
-      onSubmitted({ ...offer, seller })
+      onSubmitted({ ...result.data, seller })
     }
   }
 
