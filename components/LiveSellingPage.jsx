@@ -325,9 +325,6 @@ export default function LiveSellingPage({ config, currentUser, onEnd }) {
         <div style={S.endOverlay}>
           <div style={S.endCard}>
             <div style={{fontSize:18,fontWeight:800,marginBottom:8}}>End live stream?</div>
-            <div style={{fontSize:13,color:'#A1A1AA',marginBottom:8,lineHeight:1.5}}>
-              {fmtViewers(viewers)} people are watching.
-            </div>
             <div style={{background:'#1e1e1e',borderRadius:12,padding:'12px 14px',marginBottom:20}}>
               <div style={{fontSize:12,color:'#A1A1AA',marginBottom:4}}>Session summary</div>
               <div style={{display:'flex',justifyContent:'space-around'}}>
@@ -336,12 +333,14 @@ export default function LiveSellingPage({ config, currentUser, onEnd }) {
                 <Stat label="Duration" val={fmtTime(elapsed)}/>
               </div>
             </div>
-            <button onClick={onEnd} style={{width:'100%',padding:14,background:'#EF4444',border:'none',borderRadius:12,color:'white',fontSize:15,fontWeight:700,cursor:'pointer',marginBottom:10}}>
-              End Live
-            </button>
-            <button onClick={()=>setShowEnd(false)} style={{width:'100%',padding:14,background:'#1e1e1e',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,color:'white',fontSize:15,fontWeight:600,cursor:'pointer'}}>
-              Keep Streaming
-            </button>
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={()=>setShowEnd(false)} style={{flex:1,padding:14,background:'#1e1e1e',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,color:'white',fontSize:14,fontWeight:600,cursor:'pointer'}}>
+                Keep Streaming
+              </button>
+              <button onClick={onEnd} style={{flex:1,padding:14,background:'#EF4444',border:'none',borderRadius:12,color:'white',fontSize:14,fontWeight:700,cursor:'pointer'}}>
+                End Live
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -404,5 +403,5 @@ const S = {
   reactionsFloat: { position:'absolute',right:60,bottom:200,display:'flex',flexDirection:'column-reverse',gap:6,zIndex:250,pointerEvents:'none' },
   reactionEmoji: { fontSize:28,animation:'floatUp 2.2s ease forwards' },
   endOverlay: { position:'absolute',inset:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'flex-end',zIndex:300 },
-  endCard: { width:'100%',background:'#141414',borderRadius:'20px 20px 0 0',padding:'24px 20px',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 20px)' },
+  endCard: { width:'100%',background:'#141414',borderRadius:'20px 20px 0 0',padding:'20px',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 28px)' },
 }

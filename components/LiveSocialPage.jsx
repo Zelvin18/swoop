@@ -239,12 +239,14 @@ export default function LiveSocialPage({ config, currentUser, onEnd }) {
                 <Stat label="Duration" val={fmtTime(elapsed)}/>
               </div>
             </div>
-            <button onClick={onEnd} style={{width:'100%',padding:14,background:'#EF4444',border:'none',borderRadius:12,color:'white',fontSize:15,fontWeight:700,cursor:'pointer',marginBottom:10}}>
-              End Live
-            </button>
-            <button onClick={()=>setShowEnd(false)} style={{width:'100%',padding:14,background:'#1e1e1e',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,color:'white',fontSize:15,fontWeight:600,cursor:'pointer'}}>
-              Keep Streaming
-            </button>
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={()=>setShowEnd(false)} style={{flex:1,padding:14,background:'#1e1e1e',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,color:'white',fontSize:14,fontWeight:600,cursor:'pointer'}}>
+                Keep Streaming
+              </button>
+              <button onClick={onEnd} style={{flex:1,padding:14,background:'#EF4444',border:'none',borderRadius:12,color:'white',fontSize:14,fontWeight:700,cursor:'pointer'}}>
+                End Live
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -295,5 +297,5 @@ const s = {
   bottomTools: { display:'flex',justifyContent:'space-around' },
   toolBtn:     { display:'flex',flexDirection:'column',alignItems:'center',gap:3,background:'none',border:'none',cursor:'pointer',padding:'4px 12px' },
   endOverlay:  { position:'absolute',inset:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'flex-end',zIndex:300 },
-  endCard:     { width:'100%',background:'#141414',borderRadius:'20px 20px 0 0',padding:'24px 20px',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 20px)' },
+  endCard:     { width:'100%',background:'#141414',borderRadius:'20px 20px 0 0',padding:'20px',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 28px)' },
 }

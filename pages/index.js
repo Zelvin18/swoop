@@ -7,9 +7,11 @@ import InboxPage from '../components/InboxPage'
 import ProfilePage from '../components/ProfilePage'
 import LivePage from '../components/LivePage'
 import AddPostModal from '../components/AddPostModal'
+import LivePiPCard from '../components/LivePiPCard'
 import Toast from '../components/Toast'
 import { supabase } from '../lib/supabase'
 import { pauseAllMedia, resumeVisibleMedia } from '../lib/mediaPlayback'
+import { endLiveStream } from '../lib/live'
 
 export default function Home() {
   const router = useRouter()
@@ -20,6 +22,12 @@ export default function Home() {
   const [user, setUser]               = useState(null)
   const [authLoading, setAuthLoading] = useState(true)
   const [refreshToken, setRefreshToken] = useState(0)
+
+  // ── PiP live state ────────────────────────────────────────────────────────
+  // When user is live and navigates away, liveConfig holds the session info
+  // and pipActive=true shows the floating card
+  const [liveConfig,  setLiveConfig]  = useState(null)  // { streamId, title, type }
+  const [pipActive,   setPipActive]   = useState(false) // floating PiP card visible
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
@@ -47,6 +55,14 @@ export default function Home() {
 
   const handleNav = (tab) => {
     if (tab === 'add') { setShowAddPost(true); return }
+    // If user is live and navigating away from live tab, activate PiP
+    if (activeTab === 'live' && tab !== 'live' && liveConfig && !pipActive) {
+      setPipActive(true)
+    }
+    // If user is navigating back to live tab, deactivate PiP
+    if (tab === 'live' && pipActive) {
+      setPipActive(false)
+    }
     // Pause all media when navigating away from feed
     if (activeTab === 'home' && tab !== 'home') {
       pauseAllMedia()
@@ -56,6 +72,14 @@ export default function Home() {
       setTimeout(() => resumeVisibleMedia(), 100)
     }
     setActiveTab(tab)
+  }
+
+  const handleEndLiveGlobal = async () => {
+    if (liveConfig?.streamId) await endLiveStream(liveConfig.streamId)
+    setLiveConfig(null)
+    setPipActive(false)
+    if (activeTab !== 'live') setActiveTab('live')
+    showToast('✅ Live ended!')
   }
 
   const handleSignOut = async () => {
@@ -110,7 +134,12 @@ export default function Home() {
         </div>
 
         <div className={`screen ${activeTab==='live'?'active':''}`} style={{background:'#000'}}>
-          <LivePage showToast={showToast} user={user} />
+          <LivePage
+            showToast={showToast}
+            user={user}
+            onGoLive={(config) => setLiveConfig(config)}
+            onLiveEnded={() => { setLiveConfig(null); setPipActive(false) }}
+          />
         </div>
 
         <div className={`screen ${activeTab==='requests'?'active':''}`} style={{background:'#000'}}>
@@ -167,6 +196,18 @@ export default function Home() {
             showToast={showToast}
             currentUser={user}
             onPosted={() => { setFeedRefresh(n => n + 1); setActiveTab('home') }}
+          />
+        )}
+
+        {/* PiP Live Card — shown when host navigates away while live */}
+        {pipActive && liveConfig && activeTab !== 'live' && (
+          <LivePiPCard
+            liveConfig={liveConfig}
+            onExpand={() => {
+              setPipActive(false)
+              setActiveTab('live')
+            }}
+            onEnd={handleEndLiveGlobal}
           />
         )}
 

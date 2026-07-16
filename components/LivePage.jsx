@@ -21,7 +21,7 @@ const CATEGORY_EMOJI = {
 }
 const FILTER_OPTIONS = ['All', 'Following', 'Electronics', 'Fashion', 'Home', 'Beauty']
 
-export default function LivePage({ showToast, user }) {
+export default function LivePage({ showToast, user, onGoLive, onLiveEnded }) {
   // ── View state ─────────────────────────────────────────────────────────────
   const [view, setView]         = useState('list')
   // view: 'list' | 'setup' | 'sell-host' | 'social-host' | 'viewer' | 'search' | 'notifications' | 'category'
@@ -80,8 +80,10 @@ export default function LivePage({ showToast, user }) {
     })
     if (!stream) { showToast('Failed to start live. Try again.'); return }
     if (config.products?.length) await insertLiveProducts(stream.id, config.products)
-    setLiveConfig({ ...config, streamId: stream.id })
+    const fullConfig = { ...config, streamId: stream.id, type: 'sell' }
+    setLiveConfig(fullConfig)
     setLiveStreamId(stream.id)
+    onGoLive?.(fullConfig)
     setView('sell-host')
   }
 
@@ -95,8 +97,10 @@ export default function LivePage({ showToast, user }) {
       deliveryAvailable: false,
     })
     if (!stream) { showToast('Failed to start live. Try again.'); return }
-    setLiveConfig({ ...config, streamId: stream.id })
+    const fullConfig = { ...config, streamId: stream.id, type: 'social' }
+    setLiveConfig(fullConfig)
     setLiveStreamId(stream.id)
+    onGoLive?.(fullConfig)
     setView('social-host')
   }
 
@@ -104,6 +108,8 @@ export default function LivePage({ showToast, user }) {
     if (liveStreamId) await endLiveStream(liveStreamId)
     setView('list')
     setLiveStreamId(null)
+    setLiveConfig(null)
+    onLiveEnded?.()
     showToast('✅ Live ended!')
     loadStreams()
   }
