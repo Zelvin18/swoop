@@ -15,7 +15,7 @@ const LOC_KEY = 'swoop_req_location_asked'
 function avatarColor(id='') { return COLORS[id.split('').reduce((a,c)=>a+c.charCodeAt(0),0)%COLORS.length] }
 function initials(n='') { return n.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)||'?' }
 
-const FILTERS = ['My Requests','All Requests','Near You','Following','Categories']
+const FILTERS = ['All Requests','My Requests','Near You','Following','Categories']
 
 export default function RequestsPage({ showToast, currentUser }) {
   const [filter,       setFilter]       = useState('All Requests')

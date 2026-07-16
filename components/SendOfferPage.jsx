@@ -96,42 +96,74 @@ export default function SendOfferPage({ request, currentUser, onClose, onSubmitt
         paddingBottom: 100,
       }}>
 
-        {/* You are offering for */}
-        <div style={{
-          background: '#141414', borderRadius: 14, padding: 14, marginBottom: 16,
-        }}>
-          <div style={{ fontSize: 11, color: '#A1A1AA', marginBottom: 10 }}>
-            You are offering for:
+        {/* ── Request summary card ── */}
+        <div style={{ background:'#141414', borderRadius:16, overflow:'hidden', marginBottom:16, border:'1px solid rgba(255,255,255,0.07)' }}>
+          {/* Label */}
+          <div style={{ padding:'10px 14px 0', fontSize:11, fontWeight:600, color:'#71717A', letterSpacing:0.5, textTransform:'uppercase' }}>
+            You are offering for
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            {/* Thumbnail */}
-            <div style={{
-              width: 60, height: 60, borderRadius: 10, overflow: 'hidden', flexShrink: 0,
-              background: '#1e1e1e', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            }}>
-              {request.images?.[0] ? (
-                <img
-                  src={request.images[0]}
-                  alt=""
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              ) : (
-                <span style={{ fontSize: 28 }}>
-                  {CAT_EMOJI[request.category] || '📦'}
-                </span>
-              )}
+
+          {/* Image banner — large if available */}
+          {request.images?.[0] && (
+            <div style={{ width:'100%', height:140, overflow:'hidden', marginTop:10 }}>
+              <img src={request.images[0]} alt="" style={{ width:'100%', height:'100%', objectFit:'cover' }} />
             </div>
-            {/* Info */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+          )}
+
+          {/* Details row */}
+          <div style={{ padding:'12px 14px', display:'flex', alignItems:'flex-start', gap:12 }}>
+            {/* Category emoji badge when no image */}
+            {!request.images?.[0] && (
               <div style={{
-                fontWeight: 700, fontSize: 14, marginBottom: 4,
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                width:56, height:56, borderRadius:12, background:'#1e1e1e',
+                border:'1px solid rgba(255,255,255,0.08)', flexShrink:0,
+                display:'flex', alignItems:'center', justifyContent:'center', fontSize:28,
               }}>
+                {CAT_EMOJI[request.category] || '📦'}
+              </div>
+            )}
+            <div style={{ flex:1, minWidth:0 }}>
+              {/* Title */}
+              <div style={{ fontSize:15, fontWeight:800, marginBottom:5, lineHeight:1.25 }}>
                 {request.title}
               </div>
-              <div style={{ fontSize: 11, color: '#71717A' }}>
+              {/* Meta: poster + time */}
+              <div style={{ fontSize:11, color:'#71717A', marginBottom:8 }}>
                 Posted by @{request.buyer?.username || 'buyer'}
                 {request._timeAgo ? ` · ${request._timeAgo}` : ''}
+              </div>
+              {/* Budget + condition chips */}
+              <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
+                {(request.budget_min || request.budget_max) && (
+                  <span style={{
+                    display:'inline-flex', alignItems:'center', gap:4,
+                    background:'rgba(34,197,94,0.12)', color:'#22C55E',
+                    border:'1px solid rgba(34,197,94,0.25)',
+                    padding:'4px 10px', borderRadius:20, fontSize:11, fontWeight:700,
+                  }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+                    Budget: {request.budget_max
+                      ? `Up to UGX ${Number(request.budget_max).toLocaleString()}`
+                      : request.budget_min
+                        ? `From UGX ${Number(request.budget_min).toLocaleString()}`
+                        : 'Flexible'}
+                  </span>
+                )}
+                {!request.budget_min && !request.budget_max && (
+                  <span style={{ display:'inline-flex', alignItems:'center', gap:4, background:'rgba(255,255,255,0.06)', color:'#A1A1AA', border:'1px solid rgba(255,255,255,0.08)', padding:'4px 10px', borderRadius:20, fontSize:11, fontWeight:600 }}>
+                    Budget: Flexible
+                  </span>
+                )}
+                {request.category && (
+                  <span style={{ background:'rgba(124,58,237,0.12)', color:'#A855F7', border:'1px solid rgba(124,58,237,0.2)', padding:'4px 10px', borderRadius:20, fontSize:11, fontWeight:600 }}>
+                    {request.category}
+                  </span>
+                )}
+                {request.condition_pref && request.condition_pref !== 'Any Condition' && (
+                  <span style={{ background:'rgba(255,255,255,0.06)', color:'#A1A1AA', border:'1px solid rgba(255,255,255,0.08)', padding:'4px 10px', borderRadius:20, fontSize:11, fontWeight:600 }}>
+                    {request.condition_pref}
+                  </span>
+                )}
               </div>
             </div>
           </div>

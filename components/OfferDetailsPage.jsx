@@ -3,7 +3,7 @@
  * Grid image layout (1 large + 4 small), side-by-side Accept/Decline buttons,
  * working Follow/Message, proper portal so nav is hidden.
  */
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { updateOfferStatus as _updateOfferStatus } from '../lib/requests'
 import { formatUGX } from '../lib/feed'
 import { supabase } from '../lib/supabase'
@@ -120,6 +120,11 @@ export default function OfferDetailsPage({ offer, request, currentUser, onBack, 
 
           {/* ── Image grid ── */}
           <ImageGrid images={images} request={request} onImageClick={setLightboxIdx} />
+
+          {/* ── Lightbox (horizontal scroll, full screen) ── */}
+          {lightboxIdx !== null && (
+            <Lightbox images={images} startIndex={lightboxIdx} onClose={() => setLightboxIdx(null)} />
+          )}
 
           {/* ── Seller profile ── */}
           <div style={{padding:'14px 16px', borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
@@ -365,9 +370,100 @@ function ImageGrid({ images, request, onImageClick }) {
   )
 }
 
-/* ── Lightbox (horizontal scroll) — opened when user taps any grid image ── */
-// Note: lightbox is handled by the parent setting lightboxIdx
-// This component keeps it simple for now
+/* ── Lightbox — full-screen horizontal scroll opened when tapping any grid image ── */
+function Lightbox({ images, startIndex, onClose }) {
+  const [current, setCurrent] = useState(startIndex)
+  const scrollRef = useRef(null)
+
+  // Scroll to startIndex on mount
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = startIndex * scrollRef.current.offsetWidth
+    }
+  }, [startIndex])
+
+  const handleScroll = (e) => {
+    const idx = Math.round(e.currentTarget.scrollLeft / e.currentTarget.offsetWidth)
+    setCurrent(idx)
+  }
+
+  return (
+    <div style={{
+      position:'fixed', inset:0, zIndex:10001,
+      background:'#000',
+      display:'flex', flexDirection:'column',
+    }}>
+      {/* Header */}
+      <div style={{
+        display:'flex', alignItems:'center', justifyContent:'space-between',
+        padding:'12px 16px',
+        paddingTop:'calc(env(safe-area-inset-top,0px) + 12px)',
+        background:'rgba(0,0,0,0.8)', backdropFilter:'blur(12px)',
+        flexShrink:0,
+      }}>
+        <button onClick={onClose} style={{
+          width:36, height:36, borderRadius:'50%',
+          background:'rgba(255,255,255,0.1)', border:'none',
+          display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer',
+        }}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+        <span style={{ fontSize:14, fontWeight:700, color:'white' }}>
+          {current + 1} / {images.length}
+        </span>
+        <div style={{ width:36 }} />
+      </div>
+
+      {/* Horizontal scroll images */}
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        style={{
+          flex:1,
+          display:'flex',
+          overflowX:'auto',
+          scrollSnapType:'x mandatory',
+          scrollbarWidth:'none',
+        }}
+      >
+        {images.map((src, i) => (
+          <div key={i} style={{
+            width:'100vw', flexShrink:0,
+            scrollSnapAlign:'start',
+            display:'flex', alignItems:'center', justifyContent:'center',
+          }}>
+            <img src={src} alt={`Image ${i+1}`} style={{
+              maxWidth:'100%', maxHeight:'100%', objectFit:'contain',
+            }} />
+          </div>
+        ))}
+      </div>
+
+      {/* Dot indicators */}
+      {images.length > 1 && (
+        <div style={{
+          display:'flex', justifyContent:'center', gap:6,
+          padding:'14px 16px',
+          paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 14px)',
+          flexShrink:0,
+        }}>
+          {images.map((_, i) => (
+            <div key={i} style={{
+              width: i === current ? 20 : 6, height:6, borderRadius:3,
+              background: i === current ? '#FF3366' : 'rgba(255,255,255,0.3)',
+              transition:'all 0.2s',
+              cursor:'pointer',
+            }} onClick={() => {
+              if (scrollRef.current) {
+                scrollRef.current.scrollTo({ left: i * scrollRef.current.offsetWidth, behavior:'smooth' })
+              }
+            }} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 const S = {
   iconBtn: {
