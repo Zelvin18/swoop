@@ -19,49 +19,70 @@ export default function LiveViewerPage({ stream, currentUser, onClose }) {
   const [reserved,   setReserved]   = useState({})
   const [gifts,      setGifts]      = useState([])
   const [elapsed,    setElapsed]    = useState(0)
-  const chatRef = useRef(null)
+  const [liveStream, setLiveStream] = useState(null)  // WebRTC MediaStream from host
+  const chatRef    = useRef(null)
+  const videoRef   = useRef(null)   // <video> for host stream
+  const viewerRef  = useRef(null)   // LiveViewer WebRTC instance
+  const viewerId   = useRef(currentUser?.id || `anon-${Math.random().toString(36).slice(2)}`)
 
   const host = stream.profiles || {}
   const hostColor   = avatarColor(host.id || stream.host_id)
   const hostInitial = initials(host.full_name || host.username || 'Host')
   const isSell      = stream.type === 'sell'
 
-  // Join stream + load products
+  // Attach WebRTC stream to video element when it arrives
+  useEffect(() => {
+    if (liveStream && videoRef.current) {
+      videoRef.current.srcObject = liveStream
+      videoRef.current.play().catch(() => {})
+    }
+  }, [liveStream])
+
+  // Join stream + load products + start WebRTC viewer
   useEffect(() => {
     joinStream(stream.id)
     if (isSell) fetchLiveProducts(stream.id).then(setProducts)
-
-    // Check if following
-    if (currentUser && host.id) {
-      isFollowing(currentUser.id, host.id).then(setFollowing)
-    }
-
-    // Timer
+    if (currentUser && host.id) isFollowing(currentUser.id, host.id).then(setFollowing)
     const timer = setInterval(() => setElapsed(e => e + 1), 1000)
+
+    // Start WebRTC viewer — receive host's camera stream
+    let viewer = null
+    ;(async () => {
+      const { LiveViewer } = await import('../lib/webrtc')
+      viewer = new LiveViewer(stream.id, viewerId.current, (mediaStream) => {
+        setLiveStream(mediaStream)
+      })
+      await viewer.start()
+      viewerRef.current = viewer
+    })()
 
     return () => {
       clearInterval(timer)
       leaveStream(stream.id)
+      if (viewerRef.current) { viewerRef.current.stop(); viewerRef.current = null }
     }
   }, [stream.id])
 
-  // Realtime: comments
+  // Realtime: comments — fetch profile to get username
   useEffect(() => {
     const channel = supabase
       .channel(`live-comments-${stream.id}`)
       .on('postgres_changes', {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'live_comments',
-        filter: `stream_id=eq.${stream.id}`,
-      }, payload => {
+        event: 'INSERT', schema: 'public',
+        table: 'live_comments', filter: `stream_id=eq.${stream.id}`,
+      }, async payload => {
         const c = payload.new
+        // Fetch the commenter's profile for their display name + avatar
+        const { data: profile } = await supabase
+          .from('profiles').select('id, username, full_name, avatar_url')
+          .eq('id', c.user_id).single()
         setComments(prev => [...prev.slice(-20), {
           id: c.id,
-          user: c.profiles?.username || c.profiles?.full_name || 'viewer',
+          user: profile?.username || profile?.full_name || 'viewer',
           text: c.message,
           color: avatarColor(c.user_id),
           userId: c.user_id,
+          avatarUrl: profile?.avatar_url || null,
         }])
       })
       .subscribe()
@@ -150,12 +171,33 @@ export default function LiveViewerPage({ stream, currentUser, onClose }) {
 
   return (
     <div style={S.page}>
-      {/* Full screen video bg */}
-      <div style={{ ...S.videoBg, background: hostColor + '22' }}>
-        <div style={S.videoPlaceholder}>
-          <i className="fas fa-video" style={{ fontSize: 48, color: 'rgba(255,255,255,0.1)' }} />
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)', marginTop: 8 }}>Live stream</div>
-        </div>
+      {/* Full screen video — WebRTC stream from host */}
+      <div style={{ ...S.videoBg, background: '#000' }}>
+        {liveStream ? (
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            style={{ width:'100%', height:'100%', objectFit:'cover' }}
+          />
+        ) : (
+          /* Waiting for host stream — show host avatar + connecting indicator */
+          <div style={S.videoPlaceholder}>
+            <div style={{
+              width:80, height:80, borderRadius:'50%', background:hostColor,
+              display:'flex', alignItems:'center', justifyContent:'center',
+              fontSize:32, fontWeight:900, color:'white', marginBottom:16,
+              border:'3px solid rgba(255,255,255,0.3)',
+            }}>{hostInitial}</div>
+            <div style={{ fontSize:14, color:'rgba(255,255,255,0.5)', marginBottom:8 }}>
+              {host.full_name || host.username || 'Host'}
+            </div>
+            <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:12, color:'rgba(255,255,255,0.3)' }}>
+              <div style={{ width:8, height:8, borderRadius:'50%', background:'#EF4444', animation:'blink 1s infinite' }}/>
+              Connecting to live stream…
+            </div>
+          </div>
+        )}
       </div>
       <div style={S.overlay} />
 
@@ -288,7 +330,12 @@ export default function LiveViewerPage({ stream, currentUser, onClose }) {
           )}
           {comments.map(c => (
             <div key={c.id} style={S.chatRow}>
-              <div style={{ ...S.chatAvatar, background: c.color }}>{c.user[0].toUpperCase()}</div>
+              <div style={{ ...S.chatAvatar, background: c.color, overflow:'hidden' }}>
+                {c.avatarUrl
+                  ? <img src={c.avatarUrl} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}} alt=""/>
+                  : c.user[0]?.toUpperCase()
+                }
+              </div>
               <div style={S.chatBubble}>
                 <span style={{ fontWeight: 700, color: c.color }}>{c.user} </span>
                 <span style={{ color: 'rgba(255,255,255,0.9)' }}>{c.text}</span>

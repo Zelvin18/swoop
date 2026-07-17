@@ -63,6 +63,10 @@ export default function Home() {
     if (tab === 'live' && pipActive) {
       setPipActive(false)
     }
+    // Pause ALL media when entering live tab (feeds must be silent)
+    if (tab === 'live') {
+      pauseAllMedia()
+    }
     // Pause all media when navigating away from feed
     if (activeTab === 'home' && tab !== 'home') {
       pauseAllMedia()

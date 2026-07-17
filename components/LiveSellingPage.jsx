@@ -18,7 +18,7 @@ export default function LiveSellingPage({ config, currentUser, onEnd }) {
   const [comments,     setComments]     = useState([])
   const [viewers,      setViewers]      = useState(0)
   const [reservations, setReservations] = useState(0)
-  const [reactions,    setReactions]    = useState([])   // floating emojis
+  const [reactions,    setReactions]    = useState([])
   const [comment,      setComment]      = useState('')
   const [elapsed,      setElapsed]      = useState(0)
   const [showEnd,      setShowEnd]      = useState(false)
@@ -26,7 +26,22 @@ export default function LiveSellingPage({ config, currentUser, onEnd }) {
   const [muted,        setMuted]        = useState(false)
   const [cameraFront,  setCameraFront]  = useState(true)
   const [sending,      setSending]      = useState(false)
-  const chatRef = useRef(null)
+  const chatRef   = useRef(null)
+  const hostRef   = useRef(null)
+
+  // ── Start WebRTC broadcast when camera stream is ready ─────
+  const handleStream = useCallback(async (mediaStream) => {
+    if (!streamId || !mediaStream) return
+    if (hostRef.current) hostRef.current.stop()
+    const { LiveHost } = await import('../lib/webrtc')
+    const host = new LiveHost(streamId, mediaStream, () => {})
+    await host.start()
+    hostRef.current = host
+  }, [streamId])
+
+  useEffect(() => {
+    return () => { if (hostRef.current) { hostRef.current.stop(); hostRef.current = null } }
+  }, [])
 
   // ── Load products ──────────────────────────────────────────
   useEffect(() => {
@@ -180,7 +195,13 @@ export default function LiveSellingPage({ config, currentUser, onEnd }) {
 
       {/* ── VIDEO ZONE ── */}
       <div style={S.videoZone}>
-        <div style={S.videoBg}><CameraPreview facingMode={cameraFront?'user':'environment'}/></div>
+        <div style={S.videoBg}>
+          <CameraPreview
+            facingMode={cameraFront?'user':'environment'}
+            captureAudio={true}
+            onStream={handleStream}
+          />
+        </div>
         <div style={S.topGrad}/>
         <div style={S.botGrad}/>
 

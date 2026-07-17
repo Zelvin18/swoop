@@ -9,6 +9,7 @@ import {
   sendLiveComment, sendLiveReaction,
   avatarColor, fmtViewers, fmtTime,
 } from '../lib/live'
+import { LiveHost } from '../lib/webrtc'
 import CameraPreview from './CameraPreview'
 
 const REACTION_MAP = { heart:'❤️', fire:'🔥', clap:'👏', star:'⭐' }
@@ -25,7 +26,25 @@ export default function LiveSocialPage({ config, currentUser, onEnd }) {
   const [muted,       setMuted]       = useState(false)
   const [cameraFront, setCameraFront] = useState(true)
   const [sending,     setSending]     = useState(false)
-  const chatRef = useRef(null)
+  const chatRef   = useRef(null)
+  const hostRef   = useRef(null)   // LiveHost WebRTC instance
+
+  // ── Start WebRTC broadcast when camera stream is ready ─────
+  const handleStream = useCallback(async (mediaStream) => {
+    if (!streamId || !mediaStream) return
+    if (hostRef.current) hostRef.current.stop()
+    const { LiveHost } = await import('../lib/webrtc')
+    const host = new LiveHost(streamId, mediaStream, (peerCount) => {
+      // peer count from WebRTC (supplement viewer count from DB)
+    })
+    await host.start()
+    hostRef.current = host
+  }, [streamId])
+
+  // Cleanup WebRTC on unmount
+  useEffect(() => {
+    return () => { if (hostRef.current) { hostRef.current.stop(); hostRef.current = null } }
+  }, [])
 
   // ── Timer ──────────────────────────────────────────────────
   useEffect(() => {
@@ -121,7 +140,12 @@ export default function LiveSocialPage({ config, currentUser, onEnd }) {
     <div style={s.page}>
       {/* Camera background */}
       <div style={{position:'absolute',inset:0,zIndex:0}}>
-        <CameraPreview facingMode={cameraFront?'user':'environment'} style={{width:'100%',height:'100%'}}/>
+        <CameraPreview
+          facingMode={cameraFront?'user':'environment'}
+          style={{width:'100%',height:'100%'}}
+          captureAudio={true}
+          onStream={handleStream}
+        />
       </div>
       <div style={s.overlay}/>
 

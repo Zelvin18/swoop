@@ -127,6 +127,17 @@ export default function LivePage({ showToast, user, onGoLive, onLiveEnded }) {
   }
 
   // ── Sub-views ──────────────────────────────────────────────────────────────
+  // Pause all feed media whenever we're in any live sub-view
+  useEffect(() => {
+    if (view !== 'list') {
+      // Kill all feed videos/audio while in live
+      if (typeof document !== 'undefined') {
+        document.querySelectorAll('video').forEach(v => { v.pause(); v.muted = true })
+        document.querySelectorAll('audio').forEach(a => a.pause())
+      }
+    }
+  }, [view])
+
   if (view === 'setup')
     return <GoLiveSetupPage onClose={() => setView('list')} onStartSell={handleStartSell} onStartSocial={handleStartSocial} />
 
