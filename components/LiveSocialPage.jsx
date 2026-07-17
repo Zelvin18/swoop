@@ -10,6 +10,7 @@ import {
   avatarColor, fmtViewers, fmtTime,
 } from '../lib/live'
 import CameraPreview from './CameraPreview'
+import OverlayPortal from './OverlayPortal'
 
 const REACTION_MAP = { heart:'❤️', fire:'🔥', clap:'👏', star:'⭐' }
 
@@ -118,6 +119,7 @@ export default function LiveSocialPage({ config, currentUser, onEnd }) {
   }, [currentUser, streamId])
 
   return (
+    <OverlayPortal>
     <div style={s.page}>
       {/* Camera background */}
       <div style={{position:'absolute',inset:0,zIndex:0}}>
@@ -257,6 +259,7 @@ export default function LiveSocialPage({ config, currentUser, onEnd }) {
         @keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
       `}</style>
     </div>
+    </OverlayPortal>
   )
 }
 

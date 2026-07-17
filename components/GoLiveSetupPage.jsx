@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import CameraPreview from './CameraPreview'
+import OverlayPortal from './OverlayPortal'
 
 const CATEGORIES = ['Phones','Electronics','Fashion','Sneakers','Home','Beauty','Cars','Other']
 
@@ -29,6 +30,7 @@ export default function GoLiveSetupPage({ onClose, onStartSell, onStartSocial })
   // ── MODE SELECT ──
   if (!mode) {
     return (
+      <OverlayPortal>
       <div style={s.page}>
         {/* Header */}
         <div style={s.header}>
@@ -98,12 +100,14 @@ export default function GoLiveSetupPage({ onClose, onStartSell, onStartSocial })
 
         <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
       </div>
+      </OverlayPortal>
     )
   }
 
   // ── SOCIAL SETUP ──
   if (mode === 'social') {
     return (
+      <OverlayPortal>
       <div style={s.page}>
         <div style={s.header}>
           <button onClick={() => setMode(null)} style={s.closeBtn}>
@@ -160,11 +164,13 @@ export default function GoLiveSetupPage({ onClose, onStartSell, onStartSocial })
           </button>
         </div>
       </div>
+      </OverlayPortal>
     )
   }
 
   // ── SELL LIVE SETUP ──
   return (
+    <OverlayPortal>
     <div style={s.page}>
       <div style={s.header}>
         <button onClick={() => setMode(null)} style={s.closeBtn}>
@@ -267,6 +273,7 @@ export default function GoLiveSetupPage({ onClose, onStartSell, onStartSocial })
         </button>
       </div>
     </div>
+    </OverlayPortal>
   )
 }
 
@@ -496,8 +503,7 @@ const s = {
   },
   footer: {
     padding: '12px 16px',
-    /* sit above the bottom nav (50px) + safe area */
-    paddingBottom: 'calc(var(--nav-h, 50px) + env(safe-area-inset-bottom, 0px) + 12px)',
+    paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 16px)',
     background: 'rgba(0,0,0,0.95)',
     borderTop: '1px solid rgba(255,255,255,0.07)',
     flexShrink: 0,

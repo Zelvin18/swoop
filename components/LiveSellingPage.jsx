@@ -10,6 +10,7 @@ import {
   avatarColor, initials, fmtViewers, fmtTime,
 } from '../lib/live'
 import CameraPreview from './CameraPreview'
+import OverlayPortal from './OverlayPortal'
 
 export default function LiveSellingPage({ config, currentUser, onEnd }) {
   const { title = 'Live Sell 🔥', streamId } = config || {}
@@ -169,6 +170,7 @@ export default function LiveSellingPage({ config, currentUser, onEnd }) {
   const totalStock = products.reduce((a, p) => a + (p.stock_remaining || 0), 0)
 
   return (
+    <OverlayPortal>
     <div style={S.page}>
 
       {/* Floating reactions */}
@@ -351,6 +353,7 @@ export default function LiveSellingPage({ config, currentUser, onEnd }) {
         @keyframes floatUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-130px) scale(1.5);opacity:0}}
       `}</style>
     </div>
+    </OverlayPortal>
   )
 }
 

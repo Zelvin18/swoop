@@ -6,6 +6,7 @@ import {
   avatarColor, initials, fmtViewers, fmtTime,
 } from '../lib/live'
 import { supabase } from '../lib/supabase'
+import OverlayPortal from './OverlayPortal'
 
 export default function LiveViewerPage({ stream, currentUser, onClose }) {
   const [products,   setProducts]   = useState([])
@@ -149,6 +150,7 @@ export default function LiveViewerPage({ stream, currentUser, onClose }) {
   }
 
   return (
+    <OverlayPortal>
     <div style={S.page}>
       {/* Full screen video bg */}
       <div style={{ ...S.videoBg, background: hostColor + '22' }}>
@@ -329,6 +331,7 @@ export default function LiveViewerPage({ stream, currentUser, onClose }) {
         @keyframes floatUp{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-100px) scale(1.3);opacity:0}}
       `}</style>
     </div>
+    </OverlayPortal>
   )
 }
 
