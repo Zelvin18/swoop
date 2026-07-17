@@ -10,7 +10,6 @@ import {
   avatarColor, initials, fmtViewers, fmtTime,
 } from '../lib/live'
 import CameraPreview from './CameraPreview'
-import OverlayPortal from './OverlayPortal'
 
 export default function LiveSellingPage({ config, currentUser, onEnd }) {
   const { title = 'Live Sell 🔥', streamId } = config || {}
@@ -170,7 +169,6 @@ export default function LiveSellingPage({ config, currentUser, onEnd }) {
   const totalStock = products.reduce((a, p) => a + (p.stock_remaining || 0), 0)
 
   return (
-    <OverlayPortal>
     <div style={S.page}>
 
       {/* Floating reactions */}
@@ -353,7 +351,6 @@ export default function LiveSellingPage({ config, currentUser, onEnd }) {
         @keyframes floatUp{0%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-130px) scale(1.5);opacity:0}}
       `}</style>
     </div>
-    </OverlayPortal>
   )
 }
 
@@ -367,7 +364,7 @@ function Stat({ label, val }) {
 }
 
 const S = {
-  page: { position:'fixed',inset:0,background:'#000',zIndex:200,fontFamily:"'Inter',sans-serif",color:'#fff',display:'flex',flexDirection:'column' },
+  page: { position:'fixed',inset:0,background:'#000',zIndex:9999,fontFamily:"'Inter',sans-serif",color:'#fff',display:'flex',flexDirection:'column' },
   videoZone: { position:'relative',height:'55%',flexShrink:0,background:'#0a0a0a',overflow:'hidden' },
   videoBg: { position:'absolute',inset:0,width:'100%',height:'100%',overflow:'hidden' },
   topGrad: { position:'absolute',top:0,left:0,right:0,height:100,background:'linear-gradient(to bottom,rgba(0,0,0,0.7),transparent)',pointerEvents:'none' },
@@ -408,3 +405,5 @@ const S = {
   endOverlay: { position:'absolute',inset:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'flex-end',zIndex:300 },
   endCard: { width:'100%',background:'#141414',borderRadius:'20px 20px 0 0',padding:'20px',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 28px)' },
 }
+
+

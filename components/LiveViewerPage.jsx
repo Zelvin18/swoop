@@ -6,7 +6,6 @@ import {
   avatarColor, initials, fmtViewers, fmtTime,
 } from '../lib/live'
 import { supabase } from '../lib/supabase'
-import OverlayPortal from './OverlayPortal'
 
 export default function LiveViewerPage({ stream, currentUser, onClose }) {
   const [products,   setProducts]   = useState([])
@@ -150,7 +149,6 @@ export default function LiveViewerPage({ stream, currentUser, onClose }) {
   }
 
   return (
-    <OverlayPortal>
     <div style={S.page}>
       {/* Full screen video bg */}
       <div style={{ ...S.videoBg, background: hostColor + '22' }}>
@@ -331,7 +329,6 @@ export default function LiveViewerPage({ stream, currentUser, onClose }) {
         @keyframes floatUp{0%{transform:translateY(0);opacity:1}100%{transform:translateY(-100px) scale(1.3);opacity:0}}
       `}</style>
     </div>
-    </OverlayPortal>
   )
 }
 
@@ -345,7 +342,7 @@ function ActionBtn({ icon, count, active, activeColor = '#FF3366', onClick }) {
 }
 
 const S = {
-  page:     { position: 'fixed', inset: 0, background: '#000', zIndex: 200, fontFamily: "'Inter',sans-serif", color: '#fff', overflow: 'hidden' },
+  page:     { position: 'fixed', inset: 0, background: '#000', zIndex: 9999, fontFamily: "'Inter',sans-serif", color: '#fff', overflow: 'hidden' },
   videoBg:  { position: 'absolute', inset: 0 },
   videoPlaceholder: { width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' },
   overlay:  { position: 'absolute', inset: 0, background: 'linear-gradient(to bottom,rgba(0,0,0,0.5) 0%,transparent 20%,transparent 50%,rgba(0,0,0,0.6) 72%,rgba(0,0,0,0.92) 100%)', pointerEvents: 'none' },
@@ -389,3 +386,5 @@ const S = {
 
   followBtn: { padding: '5px 14px', borderRadius: 20, color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' },
 }
+
+

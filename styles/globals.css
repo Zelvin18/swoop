@@ -84,6 +84,14 @@ body { background: #000; }
 .screen.active  { display: block; }
 .screen-feed    { top: 0; bottom: 0; }
 
+/* Live screen must NOT create a stacking context — position:fixed camera
+   video needs to escape to the viewport. overflow:visible + no transform
+   allows fixed children to render relative to the real viewport. */
+.screen-live {
+  overflow: visible !important;
+  background: transparent !important;
+}
+
 /* ── PWA STANDALONE FIX ──
    When installed to home screen, safe-area-inset-top is already
    handled by the phone OS — applying it again pushes content too far down.

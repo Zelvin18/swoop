@@ -133,7 +133,7 @@ export default function Home() {
           <FeedPage showToast={showToast} onTabChange={handleNav} currentUser={user} refreshToken={feedRefresh} />
         </div>
 
-        <div className={`screen ${activeTab==='live'?'active':''}`} style={{background:'#000'}}>
+        <div className={`screen screen-live ${activeTab==='live'?'active':''}`} style={{background:'#000'}}>
           <LivePage
             showToast={showToast}
             user={user}

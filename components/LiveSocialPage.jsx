@@ -10,7 +10,6 @@ import {
   avatarColor, fmtViewers, fmtTime,
 } from '../lib/live'
 import CameraPreview from './CameraPreview'
-import OverlayPortal from './OverlayPortal'
 
 const REACTION_MAP = { heart:'❤️', fire:'🔥', clap:'👏', star:'⭐' }
 
@@ -119,7 +118,6 @@ export default function LiveSocialPage({ config, currentUser, onEnd }) {
   }, [currentUser, streamId])
 
   return (
-    <OverlayPortal>
     <div style={s.page}>
       {/* Camera background */}
       <div style={{position:'absolute',inset:0,zIndex:0}}>
@@ -259,7 +257,6 @@ export default function LiveSocialPage({ config, currentUser, onEnd }) {
         @keyframes fadeInUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
       `}</style>
     </div>
-    </OverlayPortal>
   )
 }
 
@@ -273,7 +270,7 @@ function Stat({ label, val }) {
 }
 
 const s = {
-  page:        { position:'fixed',inset:0,background:'#000',zIndex:200,fontFamily:"'Inter',sans-serif",color:'#fff',overflow:'hidden' },
+  page:        { position:'fixed',inset:0,background:'#000',zIndex:9999,fontFamily:"'Inter',sans-serif",color:'#fff',overflow:'hidden' },
   overlay:     { position:'absolute',inset:0,background:'linear-gradient(to bottom,rgba(0,0,0,0.4) 0%,transparent 15%,transparent 55%,rgba(0,0,0,0.6) 80%,rgba(0,0,0,0.88) 100%)',pointerEvents:'none' },
   giftsArea:   { position:'absolute',right:60,bottom:260,display:'flex',flexDirection:'column-reverse',gap:8,zIndex:25,pointerEvents:'none' },
   giftFloat:   { fontSize:32,animation:'floatUp 2.2s ease forwards' },
@@ -302,3 +299,5 @@ const s = {
   endOverlay:  { position:'absolute',inset:0,background:'rgba(0,0,0,0.75)',display:'flex',alignItems:'flex-end',zIndex:300 },
   endCard:     { width:'100%',background:'#141414',borderRadius:'20px 20px 0 0',padding:'20px',paddingBottom:'calc(env(safe-area-inset-bottom,0px) + 28px)' },
 }
+
+

@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import CameraPreview from './CameraPreview'
-import OverlayPortal from './OverlayPortal'
 
 const CATEGORIES = ['Phones','Electronics','Fashion','Sneakers','Home','Beauty','Cars','Other']
 
@@ -30,8 +29,7 @@ export default function GoLiveSetupPage({ onClose, onStartSell, onStartSocial })
   // ── MODE SELECT ──
   if (!mode) {
     return (
-      <OverlayPortal>
-      <div style={s.page}>
+    <div style={s.page}>
         {/* Header */}
         <div style={s.header}>
           <button onClick={onClose} style={s.closeBtn}>
@@ -100,15 +98,13 @@ export default function GoLiveSetupPage({ onClose, onStartSell, onStartSocial })
 
         <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`}</style>
       </div>
-      </OverlayPortal>
     )
   }
 
   // ── SOCIAL SETUP ──
   if (mode === 'social') {
     return (
-      <OverlayPortal>
-      <div style={s.page}>
+    <div style={s.page}>
         <div style={s.header}>
           <button onClick={() => setMode(null)} style={s.closeBtn}>
             <i className="fas fa-arrow-left" style={{ fontSize: 17 }} />
@@ -164,13 +160,11 @@ export default function GoLiveSetupPage({ onClose, onStartSell, onStartSocial })
           </button>
         </div>
       </div>
-      </OverlayPortal>
     )
   }
 
   // ── SELL LIVE SETUP ──
   return (
-    <OverlayPortal>
     <div style={s.page}>
       <div style={s.header}>
         <button onClick={() => setMode(null)} style={s.closeBtn}>
@@ -273,7 +267,6 @@ export default function GoLiveSetupPage({ onClose, onStartSell, onStartSocial })
         </button>
       </div>
     </div>
-    </OverlayPortal>
   )
 }
 
@@ -400,7 +393,7 @@ const s = {
     position: 'fixed', inset: 0, background: '#000',
     display: 'flex', flexDirection: 'column',
     fontFamily: "'Inter', sans-serif", color: '#fff',
-    zIndex: 200,
+    zIndex: 9999,
   },
   header: {
     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -531,3 +524,6 @@ const s = {
     animation: 'blink 1s infinite',
   },
 }
+
+
+

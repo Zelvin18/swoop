@@ -242,3 +242,14 @@ $$;
 --   live_reactions, live_reservations, live_notifications
 -- RPCs: increment_viewer_count, decrement_viewer_count,
 --   decrement_live_stock, get_stream_reservation_count
+
+-- ── 10. Prevent multiple active streams per host ─────────────────────────────
+-- This unique partial index ensures a host can only have one 'live' stream at a time.
+create unique index if not exists live_streams_one_active_per_host
+  on live_streams (host_id)
+  where status = 'live';
+
+-- ── 11. Auto-end streams older than 8 hours (safety valve) ──────────────────
+-- Run this periodically or as a cron job in Supabase
+-- update live_streams set status='ended', ended_at=now()
+--   where status='live' and started_at < now() - interval '8 hours';
