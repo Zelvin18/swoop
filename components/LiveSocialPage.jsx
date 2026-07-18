@@ -9,7 +9,6 @@ import {
   sendLiveComment, sendLiveReaction,
   avatarColor, fmtViewers, fmtTime,
 } from '../lib/live'
-import { LiveHost } from '../lib/webrtc'
 import CameraPreview from './CameraPreview'
 
 const REACTION_MAP = { heart:'❤️', fire:'🔥', clap:'👏', star:'⭐' }
@@ -19,32 +18,41 @@ export default function LiveSocialPage({ config, currentUser, onEnd }) {
 
   const [comments,    setComments]    = useState([])
   const [viewers,     setViewers]     = useState(0)
-  const [reactions,   setReactions]   = useState([])  // floating emojis
+  const [reactions,   setReactions]   = useState([])
   const [comment,     setComment]     = useState('')
   const [elapsed,     setElapsed]     = useState(0)
   const [showEnd,     setShowEnd]     = useState(false)
+  const [ending,      setEnding]      = useState(false)
   const [muted,       setMuted]       = useState(false)
   const [cameraFront, setCameraFront] = useState(true)
   const [sending,     setSending]     = useState(false)
   const chatRef   = useRef(null)
-  const hostRef   = useRef(null)   // LiveHost WebRTC instance
+  const hostRef   = useRef(null)
 
-  // ── Start WebRTC broadcast when camera stream is ready ─────
+  // Start WebRTC when we get the camera stream
   const handleStream = useCallback(async (mediaStream) => {
     if (!streamId || !mediaStream) return
     if (hostRef.current) hostRef.current.stop()
     const { LiveHost } = await import('../lib/webrtc')
-    const host = new LiveHost(streamId, mediaStream, (peerCount) => {
-      // peer count from WebRTC (supplement viewer count from DB)
-    })
+    const host = new LiveHost(streamId, mediaStream, () => {})
     await host.start()
     hostRef.current = host
   }, [streamId])
 
-  // Cleanup WebRTC on unmount
+  // If config already has a mediaStream from GoLiveSetupPage, start WebRTC immediately
   useEffect(() => {
+    if (config?.mediaStream && streamId) {
+      handleStream(config.mediaStream)
+    }
     return () => { if (hostRef.current) { hostRef.current.stop(); hostRef.current = null } }
-  }, [])
+  }, [streamId])
+
+  const handleEnd = async () => {
+    if (ending) return
+    setEnding(true)
+    if (hostRef.current) { hostRef.current.stop(); hostRef.current = null }
+    await onEnd()
+  }
 
   // ── Timer ──────────────────────────────────────────────────
   useEffect(() => {
@@ -267,8 +275,8 @@ export default function LiveSocialPage({ config, currentUser, onEnd }) {
               <button onClick={()=>setShowEnd(false)} style={{flex:1,padding:14,background:'#1e1e1e',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,color:'white',fontSize:14,fontWeight:600,cursor:'pointer'}}>
                 Keep Streaming
               </button>
-              <button onClick={onEnd} style={{flex:1,padding:14,background:'#EF4444',border:'none',borderRadius:12,color:'white',fontSize:14,fontWeight:700,cursor:'pointer'}}>
-                End Live
+              <button onClick={handleEnd} style={{flex:1,padding:14,background:'#EF4444',border:'none',borderRadius:12,color:'white',fontSize:14,fontWeight:700,cursor:'pointer',opacity:ending?0.6:1}}>
+                {ending ? 'Ending…' : 'End Live'}
               </button>
             </div>
           </div>

@@ -22,6 +22,7 @@ export default function LiveSellingPage({ config, currentUser, onEnd }) {
   const [comment,      setComment]      = useState('')
   const [elapsed,      setElapsed]      = useState(0)
   const [showEnd,      setShowEnd]      = useState(false)
+  const [ending,       setEnding]       = useState(false)
   const [showProducts, setShowProducts] = useState(false)
   const [muted,        setMuted]        = useState(false)
   const [cameraFront,  setCameraFront]  = useState(true)
@@ -29,7 +30,6 @@ export default function LiveSellingPage({ config, currentUser, onEnd }) {
   const chatRef   = useRef(null)
   const hostRef   = useRef(null)
 
-  // ── Start WebRTC broadcast when camera stream is ready ─────
   const handleStream = useCallback(async (mediaStream) => {
     if (!streamId || !mediaStream) return
     if (hostRef.current) hostRef.current.stop()
@@ -39,9 +39,20 @@ export default function LiveSellingPage({ config, currentUser, onEnd }) {
     hostRef.current = host
   }, [streamId])
 
+  // Reuse stream from setup if available — no second getUserMedia
   useEffect(() => {
+    if (config?.mediaStream && streamId) {
+      handleStream(config.mediaStream)
+    }
     return () => { if (hostRef.current) { hostRef.current.stop(); hostRef.current = null } }
-  }, [])
+  }, [streamId])
+
+  const handleEnd = async () => {
+    if (ending) return
+    setEnding(true)
+    if (hostRef.current) { hostRef.current.stop(); hostRef.current = null }
+    await onEnd()
+  }
 
   // ── Load products ──────────────────────────────────────────
   useEffect(() => {
@@ -358,8 +369,8 @@ export default function LiveSellingPage({ config, currentUser, onEnd }) {
               <button onClick={()=>setShowEnd(false)} style={{flex:1,padding:14,background:'#1e1e1e',border:'1px solid rgba(255,255,255,0.1)',borderRadius:12,color:'white',fontSize:14,fontWeight:600,cursor:'pointer'}}>
                 Keep Streaming
               </button>
-              <button onClick={onEnd} style={{flex:1,padding:14,background:'#EF4444',border:'none',borderRadius:12,color:'white',fontSize:14,fontWeight:700,cursor:'pointer'}}>
-                End Live
+              <button onClick={handleEnd} style={{flex:1,padding:14,background:'#EF4444',border:'none',borderRadius:12,color:'white',fontSize:14,fontWeight:700,cursor:'pointer',opacity:ending?0.6:1}}>
+                {ending ? 'Ending…' : 'End Live'}
               </button>
             </div>
           </div>

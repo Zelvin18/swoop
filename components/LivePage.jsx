@@ -72,10 +72,8 @@ export default function LivePage({ showToast, user, onGoLive, onLiveEnded }) {
   const handleStartSell = async (config) => {
     if (!user) { showToast('Please sign in to go live'); return }
     const stream = await startLiveStream({
-      hostId: user.id,
-      title: config.title,
-      category: config.category,
-      type: 'sell',
+      hostId: user.id, title: config.title,
+      category: config.category, type: 'sell',
       deliveryAvailable: config.delivery,
     })
     if (!stream) { showToast('Failed to start live. Try again.'); return }
@@ -90,10 +88,8 @@ export default function LivePage({ showToast, user, onGoLive, onLiveEnded }) {
   const handleStartSocial = async (config) => {
     if (!user) { showToast('Please sign in to go live'); return }
     const stream = await startLiveStream({
-      hostId: user.id,
-      title: config.title,
-      category: config.category,
-      type: 'social',
+      hostId: user.id, title: config.title,
+      category: config.category, type: 'social',
       deliveryAvailable: false,
     })
     if (!stream) { showToast('Failed to start live. Try again.'); return }
@@ -105,13 +101,32 @@ export default function LivePage({ showToast, user, onGoLive, onLiveEnded }) {
   }
 
   const handleEndLive = async () => {
-    if (liveStreamId) await endLiveStream(liveStreamId)
-    setView('list')
-    setLiveStreamId(null)
+    if (!liveStreamId) return  // guard against double-tap
+    const id = liveStreamId
+    setLiveStreamId(null)      // clear immediately to prevent double-tap
     setLiveConfig(null)
+    await endLiveStream(id)
+    setView('list')
     onLiveEnded?.()
     showToast('✅ Live ended!')
     loadStreams()
+  }
+
+  // ── Stream card tap — never let host join their own live as viewer ──────────
+  const handleOpenStream = (s) => {
+    if (s.host_id === user?.id && liveStreamId === s.id) {
+      // They're already hosting this — go back to host view
+      setView(liveConfig?.type === 'sell' ? 'sell-host' : 'social-host')
+      return
+    }
+    if (s.host_id === user?.id) {
+      // Orphan stream belonging to this user — end it silently
+      endLiveStream(s.id).then(loadStreams)
+      showToast('Your previous live has been ended.')
+      return
+    }
+    setActiveStream(s)
+    setView('viewer')
   }
 
   const handleNotifyMe = async (streamId) => {
@@ -271,7 +286,7 @@ export default function LivePage({ showToast, user, onGoLive, onLiveEnded }) {
             <StreamCard
               key={s.id}
               stream={s}
-              onOpen={() => { setActiveStream(s); setView('viewer') }}
+              onOpen={() => handleOpenStream(s)}
             />
           ))}
         </div>
